@@ -1,0 +1,755 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>GÖRÜNÜR Laboratuvarı</title>
+<meta name="description" content="GÖRÜNÜR modeli ile Bilim Sergisi Tasarımı Atölyesi — İstanbul Öğretmen Akademileri, Sayısal Bilimler Akademisi">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Instrument+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+/* Layout: milimetrik laboratuvar defteri — sabit üst sekme şeridi, her bölüm bir "deney sayfası"; 5 GÖRÜNÜR adımı renkle kodlanır */
+:root{
+  --paper:#F5F7FB; --grid:rgba(35,67,232,.065); --grid2:rgba(35,67,232,.12);
+  --ink:#12203A; --ink2:#4B5B77; --line:#D5DDEA; --card:#FFFFFF; --soft:#EDF1F8;
+  --cobalt:#2343E8; --on-cobalt:#FFFFFF;
+  --marker:#FFD93D; --on-marker:#12203A;
+  --p1:#7446DB; --p2:#2343E8; --p3:#0C8577; --p4:#B87400; --p5:#D4472F;
+  --ok:#11845B; --bad:#C2342B;
+  --f-display:"Bricolage Grotesque","Avenir Next",system-ui,sans-serif;
+  --f-body:"Instrument Sans","Segoe UI",system-ui,sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --paper:#0C1322; --grid:rgba(125,147,255,.06); --grid2:rgba(125,147,255,.11);
+  --ink:#E7ECF6; --ink2:#9AA8C3; --line:#25314A; --card:#121B2E; --soft:#18233A;
+  --cobalt:#7D93FF; --on-cobalt:#0C1322; --marker:#F2CC3A; --on-marker:#12203A;
+  --p1:#A98BF5; --p2:#7D93FF; --p3:#3FC7B4; --p4:#F0B03C; --p5:#FF8068; --ok:#4CCB94; --bad:#FF7A70; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --paper:#0C1322; --grid:rgba(125,147,255,.06); --grid2:rgba(125,147,255,.11);
+  --ink:#E7ECF6; --ink2:#9AA8C3; --line:#25314A; --card:#121B2E; --soft:#18233A;
+  --cobalt:#7D93FF; --on-cobalt:#0C1322; --marker:#F2CC3A; --on-marker:#12203A;
+  --p1:#A98BF5; --p2:#7D93FF; --p3:#3FC7B4; --p4:#F0B03C; --p5:#FF8068; --ok:#4CCB94; --bad:#FF7A70; color-scheme:dark}
+
+*{box-sizing:border-box}
+html.proj{font-size:125%}
+body{margin:0;background:var(--paper);color:var(--ink);font:1rem/1.6 var(--f-body);
+  background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px),linear-gradient(var(--grid2) 1px,transparent 1px),linear-gradient(90deg,var(--grid2) 1px,transparent 1px);
+  background-size:8px 8px,8px 8px,40px 40px,40px 40px}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--card)}
+.wrap{max-width:1180px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+h1,h2,h3{font-family:var(--f-display);text-wrap:balance;margin:0;line-height:1.1}
+h2{font-size:clamp(1.7rem,3.4vw,2.5rem);font-weight:800;letter-spacing:-.02em}
+h3{font-size:1.2rem;font-weight:700}
+p{margin:0}
+.lede{color:var(--ink2);max-width:62ch;font-size:1.05rem}
+.eyebrow{font:700 .72rem/1 var(--f-mono);letter-spacing:.14em;text-transform:uppercase;color:var(--ink2)}
+button{font:inherit;cursor:pointer;color:inherit}
+:focus-visible{outline:3px solid var(--cobalt);outline-offset:2px}
+.mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+
+/* top bar */
+.bar{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--card);border-bottom:1px solid var(--line)}
+.bar .wrap{display:flex;align-items:center;gap:14px;padding-block:10px;flex-wrap:wrap}
+.brand{font:800 1.15rem/1 var(--f-display);letter-spacing:.06em;display:flex;align-items:center;gap:8px;text-decoration:none;color:var(--ink)}
+.brand i{width:12px;height:12px;border-radius:50%;background:conic-gradient(var(--p1) 0 20%,var(--p2) 0 40%,var(--p3) 0 60%,var(--p4) 0 80%,var(--p5) 0)}
+.tabs{display:flex;gap:4px;overflow-x:auto;flex:1;min-width:0;scrollbar-width:none}
+.tabs a{white-space:nowrap;text-decoration:none;color:var(--ink2);font-weight:600;font-size:.92rem;padding:7px 11px;border-radius:8px;display:flex;gap:6px;align-items:center}
+.tabs a b{font:700 .66rem/1 var(--f-mono);border:1px solid currentColor;border-radius:4px;padding:2px 4px}
+.tabs a:hover{background:var(--soft);color:var(--ink)}
+.tabs a.on{background:var(--ink);color:var(--paper)}
+.live{display:flex;align-items:center;gap:8px;font:600 .8rem/1 var(--f-mono);color:var(--ink2);white-space:nowrap}
+.dot{width:9px;height:9px;border-radius:50%;background:var(--ink2)}
+.live.on .dot{background:var(--ok);box-shadow:0 0 0 0 var(--ok);animation:pulse 2s infinite}
+@keyframes pulse{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--ok) 60%,transparent)}100%{box-shadow:0 0 0 10px transparent}}
+.iconbtn{border:1px solid var(--line);background:var(--card);border-radius:8px;padding:6px 10px;font-size:.8rem;font-weight:600}
+.iconbtn[aria-pressed="true"]{background:var(--ink);color:var(--paper)}
+
+/* views */
+.view{padding-block:36px 64px}
+.view[hidden]{display:none!important}
+.head{display:grid;gap:10px;margin-bottom:26px}
+
+/* hero */
+.hero{display:grid;grid-template-columns:1.25fr .9fr;gap:36px;align-items:center;padding-block:28px 10px}
+.word{font:800 clamp(3.4rem,11vw,8.6rem)/.86 var(--f-display);letter-spacing:-.04em;display:flex;flex-wrap:wrap}
+.word span{display:inline-block;animation:focus 1.4s cubic-bezier(.2,.7,.2,1) both}
+@keyframes focus{from{filter:blur(9px);opacity:.35;transform:translateY(6px)}to{filter:blur(0);opacity:1;transform:none}}
+.hero .tag{font-size:clamp(1.1rem,2vw,1.35rem);margin-top:18px;max-width:34ch;color:var(--ink2)}
+.hero .tag mark{background:linear-gradient(transparent 55%,var(--marker) 55%);color:inherit;padding:0 2px}
+.cta{display:flex;gap:10px;flex-wrap:wrap;margin-top:24px}
+.btn{border:0;border-radius:10px;padding:11px 18px;font-weight:700;background:var(--cobalt);color:var(--on-cobalt);text-decoration:none;display:inline-flex;align-items:center;gap:8px}
+.btn.ghost{background:transparent;color:var(--ink);border:1.5px solid var(--ink)}
+.btn.small{padding:7px 12px;font-size:.88rem;border-radius:8px}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.salon{background:var(--card);border:1.5px solid var(--ink);border-radius:16px;padding:22px;display:grid;gap:16px;box-shadow:6px 6px 0 var(--ink)}
+.salon .big{font:800 3.6rem/1 var(--f-display);font-variant-numeric:tabular-nums}
+.salon .row{display:flex;justify-content:space-between;gap:12px;align-items:baseline;border-top:1px dashed var(--line);padding-top:12px}
+.salon small{color:var(--ink2)}
+
+.cycle{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));margin-top:46px;border:1.5px solid var(--ink);border-radius:14px;overflow:hidden;background:var(--card)}
+.cycle div{padding:16px 14px;border-right:1px solid var(--line);display:grid;gap:6px;align-content:start}
+.cycle div:last-child{border-right:0}
+.cycle .n{font:700 .72rem/1 var(--f-mono);color:var(--c)}
+.cycle .k{font:700 1.05rem/1.15 var(--f-display);color:var(--c)}
+.cycle .q{font-size:.88rem;color:var(--ink2)}
+.cycle div::before{content:"";height:5px;background:var(--c);border-radius:3px;margin-bottom:6px}
+.weeks{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin-top:22px}
+.week{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;display:grid;gap:8px;text-decoration:none;color:var(--ink)}
+.week:hover{border-color:var(--ink)}
+.week .eyebrow{color:var(--cobalt)}
+.week p{color:var(--ink2);font-size:.93rem}
+
+/* experiment */
+.exp{background:var(--card);border:1px solid var(--line);border-radius:18px;margin-bottom:26px;overflow:hidden}
+.exp-top{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:18px 22px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.steps{display:flex;gap:4px;flex-wrap:wrap}
+.steps span{font:700 .68rem/1 var(--f-mono);letter-spacing:.06em;text-transform:uppercase;padding:6px 8px;border-radius:6px;border:1px solid var(--line);color:var(--ink2)}
+.steps span.done{border-color:transparent;background:var(--soft);color:var(--c)}
+.steps span.now{background:var(--c);color:var(--card);border-color:var(--c)}
+.exp-body{display:grid;grid-template-columns:1.35fr 1fr;min-width:0}
+.stage{padding:22px;border-right:1px solid var(--line);min-width:0;display:grid;gap:16px;align-content:start}
+.side{padding:22px;display:grid;gap:16px;align-content:start;background:color-mix(in srgb,var(--soft) 55%,var(--card));min-width:0}
+.canvas{background:var(--paper);border:1px dashed var(--line);border-radius:12px;padding:10px;overflow-x:auto}
+.canvas svg{display:block;width:100%;height:auto;min-width:300px}
+.q{font:700 1.15rem/1.3 var(--f-display)}
+.choices{display:flex;gap:8px;flex-wrap:wrap}
+.choice{border:1.5px solid var(--line);background:var(--card);border-radius:10px;padding:9px 14px;font-weight:600}
+.choice:hover{border-color:var(--p2)}
+.choice.sel{border-color:var(--p2);background:var(--p2);color:var(--card)}
+.tool{display:grid;gap:8px;border-left:4px solid var(--p3);padding:4px 0 4px 14px}
+.tool label{font-weight:600;font-size:.92rem}
+.tool[aria-disabled="true"]{opacity:.4;pointer-events:none}
+input[type=range]{width:100%;accent-color:var(--p3)}
+.phase-label{font:700 .7rem/1 var(--f-mono);letter-spacing:.12em;text-transform:uppercase;color:var(--c)}
+.evidence{background:var(--marker);color:var(--on-marker);border-radius:10px;padding:12px 14px;font-weight:500}
+.explain{border-left:4px solid var(--p5);padding:2px 0 2px 14px}
+.lock{color:var(--ink2);font-size:.9rem;font-style:italic}
+.bars{display:grid;gap:8px}
+.barrow{display:grid;grid-template-columns:96px 1fr 64px;gap:10px;align-items:center;font-size:.9rem}
+.barrow .track{height:22px;background:var(--soft);border-radius:6px;overflow:hidden}
+.barrow .fill{height:100%;background:var(--p2);border-radius:6px;transition:width .6s cubic-bezier(.2,.7,.2,1)}
+.barrow.correct .fill{background:var(--p4)}
+.barrow.correct .lab{font-weight:700}
+.barrow .num{text-align:right;font-family:var(--f-mono);font-variant-numeric:tabular-nums;font-size:.82rem;color:var(--ink2)}
+.stat{font:800 2.3rem/1 var(--f-display);font-variant-numeric:tabular-nums}
+.letters{font:700 clamp(1rem,2.2vw,1.35rem)/2 var(--f-mono);letter-spacing:.04em;display:flex;flex-wrap:wrap;gap:0 .6em;padding:8px}
+.letters .w{display:inline-flex}
+.letters .l{padding:0 1px;border-radius:4px;cursor:pointer;user-select:none}
+.letters .l.mk{background:var(--p3);color:var(--card)}
+.letters .l.rv{background:var(--marker);color:var(--on-marker)}
+.letters.locked .l{cursor:default}
+.num-in{width:110px;padding:9px 11px;border:1.5px solid var(--line);border-radius:10px;font:600 1rem var(--f-mono);background:var(--card);color:var(--ink)}
+
+/* court */
+.cases{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px}
+.case-tab{border:1.5px solid var(--line);background:var(--card);border-radius:10px;padding:10px 14px;font-weight:600;text-align:left}
+.case-tab.on{border-color:var(--ink);background:var(--ink);color:var(--paper)}
+.docket{background:var(--card);border:1px solid var(--line);border-radius:18px;overflow:hidden}
+.docket-head{padding:22px;border-bottom:1px solid var(--line);display:grid;gap:8px}
+.claim{font:700 clamp(1.25rem,2.6vw,1.7rem)/1.25 var(--f-display)}
+.claim::before{content:"İDDİA  ";font:700 .72rem var(--f-mono);letter-spacing:.14em;color:var(--p5);vertical-align:middle}
+.items{display:grid}
+.item{display:grid;grid-template-columns:1fr auto;gap:14px;padding:16px 22px;border-bottom:1px solid var(--line);align-items:center}
+.item .txt{min-width:0}
+.item .why{font-size:.85rem;color:var(--ink2);margin-top:6px}
+.chips{display:flex;gap:5px;flex-wrap:wrap;justify-content:flex-end}
+.chip{border:1.5px solid var(--line);background:transparent;border-radius:99px;padding:5px 11px;font-size:.82rem;font-weight:600}
+.chip.sel{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.chip.right{background:var(--ok);border-color:var(--ok);color:var(--card)}
+.chip.wrong{background:var(--bad);border-color:var(--bad);color:var(--card)}
+.verdict{padding:22px;display:grid;grid-template-columns:1fr 1fr;gap:22px;background:color-mix(in srgb,var(--soft) 55%,var(--card))}
+.legend{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:18px}
+.legend div{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px;font-size:.88rem;color:var(--ink2)}
+.legend b{display:block;color:var(--ink);font-family:var(--f-display);font-size:1rem}
+
+/* formula */
+.formula{display:grid;grid-template-columns:1.3fr 1fr;gap:22px}
+.slots{display:grid;gap:8px;counter-reset:s}
+.slot{display:grid;grid-template-columns:44px 1fr auto;align-items:center;gap:10px;background:var(--card);border:1.5px solid var(--line);border-radius:12px;padding:10px 12px;cursor:pointer;transition:transform .2s}
+.slot .i{font:700 1rem var(--f-mono);color:var(--ink2);text-align:center}
+.slot.sel{border-color:var(--cobalt);box-shadow:0 0 0 3px color-mix(in srgb,var(--cobalt) 25%,transparent)}
+.slot.good{border-color:var(--ok)}
+.slot .mv{display:flex;gap:4px}
+.slot .mv button{border:1px solid var(--line);background:var(--paper);border-radius:6px;width:32px;height:30px}
+.clock{font:800 3rem/1 var(--f-display);font-variant-numeric:tabular-nums}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px;display:grid;gap:14px;align-content:start}
+
+/* studio */
+.studio{display:grid;grid-template-columns:1.15fr .85fr;gap:24px;align-items:start}
+.form{display:grid;gap:14px}
+.f{display:grid;gap:6px}
+.f label{font-weight:600;font-size:.92rem;display:flex;gap:8px;align-items:center}
+.f label .pill{font:700 .62rem/1 var(--f-mono);letter-spacing:.08em;padding:3px 6px;border-radius:4px;background:var(--c,var(--ink2));color:var(--card)}
+.f input,.f textarea,.f select{width:100%;border:1.5px solid var(--line);border-radius:10px;padding:10px 12px;font:inherit;background:var(--card);color:var(--ink)}
+.f textarea{min-height:70px;resize:vertical}
+.f input:focus,.f textarea:focus{border-color:var(--cobalt);outline:none}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.three{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+.preview{position:sticky;top:calc(env(safe-area-inset-top,0px) + 74px);display:grid;gap:16px}
+.lens{display:grid;grid-template-columns:auto 1fr;gap:16px;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px}
+.lens svg{width:96px;height:96px}
+.checks{display:grid;gap:4px;font-size:.84rem}
+.checks div{display:flex;gap:6px;color:var(--ink2)}
+.checks div.y{color:var(--ink)}
+.checks div::before{content:"○";color:var(--ink2)}
+.checks div.y::before{content:"●";color:var(--ok)}
+.label-card{background:var(--card);border:1.5px solid var(--ink);border-radius:4px;padding:22px;box-shadow:6px 6px 0 var(--ink);display:grid;gap:12px}
+.label-card .t{font:800 1.6rem/1.1 var(--f-display)}
+.label-card .mq{font:600 1.15rem/1.35 var(--f-display);background:linear-gradient(transparent 60%,var(--marker) 60%);display:inline;color:var(--ink)}
+.label-card dl{margin:0;display:grid;gap:8px;font-size:.9rem}
+.label-card dt{font:700 .66rem/1 var(--f-mono);letter-spacing:.12em;text-transform:uppercase;color:var(--c)}
+.label-card dd{margin:2px 0 0;color:var(--ink)}
+.ai{border:1.5px dashed var(--p1);border-radius:14px;padding:14px;display:grid;gap:10px;background:color-mix(in srgb,var(--p1) 6%,var(--card))}
+.note{font-size:.85rem;color:var(--ink2)}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--paper);padding:11px 18px;border-radius:10px;font-weight:600;z-index:50;max-width:min(92vw,520px)}
+
+/* museum */
+.museum{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:20px}
+.ex{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px;display:grid;gap:12px;align-content:start;position:relative}
+.ex.mine{border:1.5px solid var(--cobalt)}
+.ex .badge{position:absolute;top:14px;right:14px;font:700 .64rem/1 var(--f-mono);letter-spacing:.1em;padding:5px 7px;border-radius:5px;background:var(--soft);color:var(--ink2)}
+.ex .badge.me{background:var(--cobalt);color:var(--on-cobalt)}
+.ex h3{padding-right:70px}
+.ex .who{font-size:.85rem;color:var(--ink2);margin-top:-6px}
+.ex .mq{font:600 1.05rem/1.35 var(--f-display)}
+.ex .task{font-size:.9rem;border-left:3px solid var(--p3);padding-left:10px;color:var(--ink2)}
+.ex .meta{display:flex;gap:16px;font:600 .8rem var(--f-mono);color:var(--ink2);border-top:1px dashed var(--line);padding-top:10px;flex-wrap:wrap}
+.ex .meta b{color:var(--ink);font-size:1rem}
+.empty{border:1.5px dashed var(--line);border-radius:16px;padding:28px;text-align:center;color:var(--ink2);display:grid;gap:10px;justify-items:center}
+.overlay{position:fixed;inset:0;background:color-mix(in srgb,var(--ink) 55%,transparent);z-index:40;display:grid;place-items:center;padding:20px max(16px,env(safe-area-inset-left,0px))}
+.modal{background:var(--card);border-radius:18px;max-width:640px;width:100%;max-height:88vh;overflow:auto;padding:24px;display:grid;gap:14px;border:1.5px solid var(--ink)}
+.modal-head{display:flex;justify-content:space-between;gap:12px;align-items:start}
+.vcard{border:1px solid var(--line);border-radius:12px;padding:12px;display:grid;gap:4px;font-size:.88rem}
+.vcard b{font:700 .64rem var(--f-mono);letter-spacing:.1em;text-transform:uppercase;color:var(--ink2)}
+
+/* guide */
+.guide{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px}
+.gw{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px;display:grid;gap:10px;align-content:start}
+.gw ol{margin:0;padding-left:20px;display:grid;gap:4px;font-size:.92rem;color:var(--ink2)}
+.timeline{display:flex;height:34px;border-radius:8px;overflow:hidden;font:600 .7rem/34px var(--f-mono);color:var(--card);text-align:center}
+.timeline span{white-space:nowrap;overflow:hidden}
+.rubric{overflow-x:auto;margin-top:22px}
+.rubric table{width:100%;border-collapse:collapse;background:var(--card);border-radius:14px;overflow:hidden;min-width:640px;font-size:.9rem}
+.rubric th,.rubric td{border:1px solid var(--line);padding:10px 12px;text-align:left;vertical-align:top}
+.rubric th{font-family:var(--f-display);background:var(--soft)}
+footer{border-top:1px solid var(--line);padding-block:22px;color:var(--ink2);font-size:.85rem}
+
+@media (max-width:900px){
+  .hero,.exp-body,.formula,.studio,.verdict{grid-template-columns:1fr}
+  .stage{border-right:0;border-bottom:1px solid var(--line)}
+  .cycle{grid-template-columns:1fr}
+  .cycle div{border-right:0;border-bottom:1px solid var(--line)}
+  .weeks,.guide,.legend{grid-template-columns:1fr 1fr}
+  .preview{position:static}
+}
+@media (max-width:560px){
+  .weeks,.guide,.legend,.two,.three{grid-template-columns:1fr}
+  .item{grid-template-columns:1fr}
+  .chips{justify-content:flex-start}
+  .live .txt{display:none}
+  .barrow{grid-template-columns:80px 1fr 56px}
+}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+[hidden]{display:none!important}
+img{max-width:100%}
+.barrow.tally{grid-template-columns:96px 1fr 60px auto}
+.adj{display:flex;gap:4px}
+.adj button{width:30px;height:28px;border:1px solid var(--line);background:var(--card);border-radius:6px;font-weight:700;line-height:1}
+.adj button:hover{border-color:var(--ink)}
+@media (max-width:560px){.barrow.tally{grid-template-columns:72px 1fr 50px auto}}
+</style>
+</head>
+<body>
+
+<header class="bar">
+  <div class="wrap">
+    <a class="brand" href="#basla"><i></i>GÖRÜNÜR</a>
+    <nav class="tabs" id="tabs" aria-label="Bölümler">
+      <a href="#basla" data-v="basla">Başla</a>
+      <a href="#algi" data-v="algi"><b>H1</b>Algı Laboratuvarı</a>
+      <a href="#mahkeme" data-v="mahkeme"><b>H1</b>Bilim Mahkemesi</a>
+      <a href="#formul" data-v="formul"><b>H1</b>Kayıp Formül</a>
+      <a href="#studyo" data-v="studyo"><b>H2</b>Sergi Stüdyosu</a>
+      <a href="#muze" data-v="muze"><b>H3</b>Bilim Müzesi</a>
+      <a href="#rehber" data-v="rehber">Rehber</a>
+    </nav>
+    <button class="iconbtn" id="projBtn" aria-pressed="false" title="Projeksiyon için yazıları büyüt">Projeksiyon</button>
+  </div>
+</header>
+
+<main>
+<!-- BAŞLA -->
+<section class="view wrap" id="v-basla">
+  <div class="hero">
+    <div>
+      <p class="eyebrow">İstanbul Öğretmen Akademileri · Sayısal Bilimler Akademisi</p>
+      <h1 class="word" aria-label="GÖRÜNÜR" style="margin-top:14px">
+        <span style="animation-delay:.00s">G</span><span style="animation-delay:.08s">Ö</span><span style="animation-delay:.16s">R</span><span style="animation-delay:.24s">Ü</span><span style="animation-delay:.32s">N</span><span style="animation-delay:.40s">Ü</span><span style="animation-delay:.48s">R</span>
+      </h1>
+      <p class="tag">Bilim, öğrencinin <mark>tahmini kanıtla karşılaştığı anda</mark> görünür olur. Bu laboratuvar o anı sınıfın tamamıyla birlikte yaşatır.</p>
+      <div class="cta">
+        <a class="btn" href="#algi">Algı Laboratuvarına gir →</a>
+        <a class="btn ghost" href="#studyo">Sergimi tasarla</a>
+      </div>
+    </div>
+    <aside class="salon" aria-live="polite">
+      <div>
+        <p class="eyebrow">Sınıfın tahmin panosu</p>
+        <div class="big" id="hCount">0</div>
+        <small id="hCountSub">katılımcı tahmin verdi</small>
+      </div>
+      <div class="row"><span>İlk tahmininde yanılanlar</span><b class="mono" id="hWrong">–</b></div>
+      <div class="row"><span>Müzeye asılan sergi</span><b class="mono" id="hEx">0</b></div>
+      <div class="row"><span>Doldurulan ziyaretçi kartı</span><b class="mono" id="hVis">0</b></div>
+      <small>Sayılar, Algı Laboratuvarı'nda + / − ile girdiğiniz sınıf oylarından hesaplanır.</small>
+    </aside>
+  </div>
+
+  <div class="cycle" aria-label="GÖRÜNÜR modelinin beş sorusu">
+    <div style="--c:var(--p1)"><span class="n">1</span><span class="k">Merak</span><span class="q">Ne merak ediyoruz?</span></div>
+    <div style="--c:var(--p2)"><span class="n">2</span><span class="k">Tahmin</span><span class="q">Ne tahmin ediyoruz?</span></div>
+    <div style="--c:var(--p3)"><span class="n">3</span><span class="k">Gözlem</span><span class="q">Ne gözlemledik?</span></div>
+    <div style="--c:var(--p4)"><span class="n">4</span><span class="k">Kanıt</span><span class="q">Kanıtımız ne?</span></div>
+    <div style="--c:var(--p5)"><span class="n">5</span><span class="k">Açıklama</span><span class="q">Nasıl açıklıyoruz?</span></div>
+  </div>
+
+  <div class="weeks">
+    <a class="week" href="#algi"><span class="eyebrow">1. Hafta · Keşfet</span><h3>Bilimsel düşünmeyi deneyimle</h3><p>Algı yanılgıları, dikkat dedektifi, Bilim Mahkemesi ve Kayıp Formül. Tahmin ile kanıt neden farklı olabilir?</p></a>
+    <a class="week" href="#studyo"><span class="eyebrow">2. Hafta · Tasarla</span><h3>Kazanımdan etkileşimli sergiye</h3><p>Kazanımı, ziyaretçinin işlem yaptığı ve kanıt topladığı bir sergiye dönüştür. Görünürlük lensi tasarımı anında puanlar.</p></a>
+    <a class="week" href="#muze"><span class="eyebrow">3. Hafta · Uygula</span><h3>Bilim Müzesi açılıyor</h3><p>Sergiler müzeye asılır, ziyaretçiler kartlarını telefondan doldurur, gruplar gelen kanıtlarla sergisini iyileştirir.</p></a>
+  </div>
+</section>
+
+<!-- ALGI LAB -->
+<section class="view wrap" id="v-algi" hidden>
+  <div class="head">
+    <p class="eyebrow">1. Hafta · Keşfet</p>
+    <h2>Algı Laboratuvarı</h2>
+    <p class="lede">Her deney beş adımlıdır. Sınıfa soruyu sorun, çoğunluğun tahminini seçip kilitleyin; ardından gelen cevapları + / − ile sayın. Sonra gözlem araçlarıyla kanıtı birlikte üretin.</p>
+  </div>
+  <div id="exps"></div>
+</section>
+
+<!-- MAHKEME -->
+<section class="view wrap" id="v-mahkeme" hidden>
+  <div class="head">
+    <p class="eyebrow">1. Hafta · Keşfet</p>
+    <h2>Bilim Mahkemesi</h2>
+    <p class="lede">Dava dosyasındaki her ifadeyi doğru rafa koyun, sonra jüri olarak karar verin. Sınıfın oylarını + / − ile jüri panosuna girin.</p>
+  </div>
+  <div class="legend">
+    <div><b>İddia</b>Doğruluğu sınanacak önerme.</div>
+    <div><b>Tanıklık</b>Birinin söylediği ya da gördüğünü anlattığı; tek başına doğrulanmamış.</div>
+    <div><b>Kanıt</b>Tekrar edilebilir ölçüm, kayıt veya deney verisi.</div>
+    <div><b>Bulgu</b>Kanıttan çıkarılan anlam.</div>
+  </div>
+  <div class="cases" id="caseTabs"></div>
+  <div id="docket"></div>
+</section>
+
+<!-- FORMÜL -->
+<section class="view wrap" id="v-formul" hidden>
+  <div class="head">
+    <p class="eyebrow">1. Hafta · Keşfet</p>
+    <h2>Kayıp Formül Operasyonu</h2>
+    <p class="lede">Bilimsel araştırmanın basamakları karıştı. İki karta dokunarak yerlerini değiştirin ya da okları kullanın. Süre ilk hamlede başlar.</p>
+  </div>
+  <div class="formula">
+    <div class="slots" id="slots"></div>
+    <div class="panel">
+      <p class="eyebrow">Süreniz</p>
+      <div class="clock" id="clock">00:00</div>
+      <div id="fResult" class="note">Sıralamayı bitirdiğinizde otomatik kontrol edilir.</div>
+      <div style="border-top:1px dashed var(--line);padding-top:12px;display:grid;gap:6px">
+        <p class="eyebrow">En iyi süre</p>
+        <div class="stat" id="fMedian">–</div>
+        <small class="note" id="fCount">Henüz tamamlanmadı.</small>
+      </div>
+      <button class="btn ghost small" id="fShuffle">Yeniden karıştır</button>
+      <p class="note"><b>Öğretmen notu:</b> Bu sıralama öğretim için bir iskelettir. Gerçek araştırmalar doğrusal ilerlemez; yeni bir kanıt sizi önceki adıma geri götürebilir.</p>
+    </div>
+  </div>
+</section>
+
+<!-- STÜDYO -->
+<section class="view wrap" id="v-studyo" hidden>
+  <div class="head">
+    <p class="eyebrow">2. Hafta · Tasarla</p>
+    <h2>Sergi Stüdyosu</h2>
+    <p class="lede">Kazanımınızı ziyaretçinin bir şey yaptığı, tahmin ettiği ve kanıt topladığı bir deneyime dönüştürün. Sağdaki görünürlük lensi tasarımınızı yazarken değerlendirir.</p>
+  </div>
+  <div class="studio">
+    <form class="form" id="studioForm" autocomplete="off">
+      <div class="three">
+        <div class="f"><label for="s_grup">Grup adı</label><input id="s_grup" placeholder="Örn. Ayşe & Mehmet"></div>
+        <div class="f"><label for="s_brans">Branş</label><input id="s_brans" placeholder="Fizik"></div>
+        <div class="f"><label for="s_sinif">Sınıf düzeyi</label><input id="s_sinif" placeholder="9. sınıf"></div>
+      </div>
+      <div class="f"><label for="s_kazanim">Kazanım / öğrenme çıktısı</label><textarea id="s_kazanim" placeholder="Öğrenci neyi anlayacak ya da yapabilecek?"></textarea></div>
+      <div class="f"><label for="s_ad">Serginin adı</label><input id="s_ad" placeholder="Merak uyandıran bir ad"></div>
+      <div class="f" style="--c:var(--p1)"><label for="s_merak"><span class="pill">1 MERAK</span>Ziyaretçiye soracağınız soru</label><textarea id="s_merak" placeholder="Sonucu açıklamadan merak uyandıran soru"></textarea></div>
+      <div class="f" style="--c:var(--p2)"><label for="s_tahmin"><span class="pill">2 TAHMİN</span>Ziyaretçi neyi tahmin edecek?</label><textarea id="s_tahmin" placeholder="Seçenekler ya da açık uçlu tahmin"></textarea></div>
+      <div class="f" style="--c:var(--p3)"><label for="s_eylem"><span class="pill">3 GÖZLEM</span>Ziyaretçi tam olarak ne yapacak?</label><textarea id="s_eylem" placeholder="Örn. Balonu şişirir, ipin başına koyar ve bırakır."></textarea></div>
+      <div class="f" style="--c:var(--p4)"><label for="s_kanit"><span class="pill">4 KANIT</span>Gözlenen ve ölçülen kanıt</label><textarea id="s_kanit" placeholder="Hangi ölçüm, sayım ya da kayıt tahmini sınar?"></textarea></div>
+      <div class="f" style="--c:var(--p5)"><label for="s_aciklama"><span class="pill">5 AÇIKLAMA</span>Bilimsel açıklama</label><textarea id="s_aciklama" placeholder="Kanıt, ilk tahminle nasıl karşılaştırılıyor?"></textarea></div>
+      <div class="two">
+        <div class="f"><label for="s_malzeme">Malzemeler</label><textarea id="s_malzeme" placeholder="Evden ya da okuldan getirilecekler"></textarea></div>
+        <div class="f"><label for="s_guvenlik">Güvenlik ve erişilebilirlik</label><textarea id="s_guvenlik" placeholder="Riskler ve önlemler"></textarea></div>
+      </div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap">
+        <button type="submit" class="btn" id="hangBtn">Müzeye as</button>
+        <button type="button" class="btn ghost" id="exampleBtn">Örnek sergiyle doldur</button>
+        <button type="button" class="btn ghost" id="copyBtn">Sergi kartını kopyala</button>
+      </div>
+      <p class="note" id="hangNote">Taslağınız bu cihazda otomatik saklanır. "Müzeye as" ile Bilim Müzesi sekmesinde sergilenir.</p>
+    </form>
+    <div class="preview">
+      <div class="lens">
+        <svg viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="42" fill="none" stroke="var(--soft)" stroke-width="10"/><circle id="lensArc" cx="50" cy="50" r="42" fill="none" stroke="var(--cobalt)" stroke-width="10" stroke-linecap="round" stroke-dasharray="0 264" transform="rotate(-90 50 50)" style="transition:stroke-dasharray .5s"/><text id="lensTxt" x="50" y="57" text-anchor="middle" font-family="Bricolage Grotesque,system-ui" font-weight="800" font-size="24" fill="var(--ink)">0</text></svg>
+        <div><p class="eyebrow">Görünürlük lensi</p><div class="checks" id="checks"></div></div>
+      </div>
+      <div class="label-card" id="labelCard"></div>
+    </div>
+  </div>
+</section>
+
+<!-- MÜZE -->
+<section class="view wrap" id="v-muze" hidden>
+  <div class="head">
+    <p class="eyebrow">3. Hafta · Uygula</p>
+    <h2>Bilim Müzesi</h2>
+    <p class="lede">Sergileri gezin, ziyaretçi kartını doldurun. Kendi serginizde ziyaretçilerin kanıtlarını ve kaç kişinin fikrini değiştirdiğini görürsünüz. Kapanış sorusu: Sergimde öğrenme hangi anda görünür oldu?</p>
+  </div>
+  <div class="museum" id="museum"></div>
+</section>
+
+<!-- REHBER -->
+<section class="view wrap" id="v-rehber" hidden>
+  <div class="head">
+    <p class="eyebrow">Eğitmen için</p>
+    <h2>3 Haftalık Uygulama Rehberi</h2>
+    <p class="lede">Atölyeyi kendi sınıfınızda bağımsız uygulamak için akış, süre ve değerlendirme ölçütleri.</p>
+  </div>
+  <div class="guide">
+    <div class="gw"><p class="eyebrow" style="color:var(--p2)">1. Hafta · Keşfet</p><h3>Bilimsel düşünmeyi deneyimle</h3>
+      <ol><li>Merak uyandırma</li><li>Çizgi yanılgısı</li><li>Daire yanılgısı</li><li>Dikkat Dedektifi</li><li>Bilim Mahkemesi</li><li>Kayıp Formül Operasyonu</li><li>Yansıtma: Tahmin ile kanıt neden farklı olabilir?</li></ol>
+      <p class="note"><b>Çıktı:</b> Katılımcı bir iddiayı tahmin, gözlem ve kanıt temelinde sorgular.</p></div>
+    <div class="gw"><p class="eyebrow" style="color:var(--p3)">2. Hafta · Tasarla</p><h3>Kazanımdan etkileşimli sergiye</h3>
+      <p class="note">120 dakikalık örnek akış</p>
+      <div class="timeline" role="img" aria-label="10 dk hatırlama, 15 dk kazanım seçimi, 15 dk tasarım kartı, 50 dk üretim, 20 dk karşılıklı ziyaret, 10 dk iyileştirme">
+        <span style="flex:10;background:var(--p1)">10</span><span style="flex:15;background:var(--p2)">15</span><span style="flex:15;background:var(--p3)">15</span><span style="flex:50;background:var(--ink)">50 dk üretim</span><span style="flex:20;background:var(--p4)">20</span><span style="flex:10;background:var(--p5)">10</span>
+      </div>
+      <ol><li>Hatırlama (10)</li><li>Kazanım seçimi (15)</li><li>Tasarım kartı (15)</li><li>Üretim (50)</li><li>Karşılıklı ziyaret (20)</li><li>İyileştirme (10)</li></ol>
+      <p class="note"><b>Kural:</b> Her ziyaretçi en az bir işlem yapar ve gözlemini kanıtla açıklar. Sergi evde tamamlanmak zorunda değildir.</p></div>
+    <div class="gw"><p class="eyebrow" style="color:var(--p5)">3. Hafta · Uygula</p><h3>Bilim Müzesi açılıyor</h3>
+      <ol><li>Gruplar sergiyi kurar, görevi açıklar</li><li>Ziyaretçiler kartlarını telefondan doldurur</li><li>Gruplar gelen kanıtları okur</li><li>Sergi geri bildirimle iyileştirilir</li></ol>
+      <p class="note"><b>Kapanış:</b> Sergimde öğrenme hangi anda görünür oldu?</p></div>
+  </div>
+  <div class="rubric">
+    <table>
+      <thead><tr><th>Ölçüt</th><th>Başlangıç</th><th>Gelişen</th><th>Görünür</th></tr></thead>
+      <tbody>
+        <tr><td><b>Merak</b></td><td>Etkinlik bilgi vererek başlar.</td><td>Bir soru var ama yanıtı ipucu veriyor.</td><td>Düşündüren, sonucu ele vermeyen bir soruyla başlar.</td></tr>
+        <tr><td><b>Katılım</b></td><td>Ziyaretçi yalnızca izler.</td><td>Ziyaretçi bir işlem yapar ama tahmin almaz.</td><td>Ziyaretçi önce tahmin eder, sonra işlem yapar.</td></tr>
+        <tr><td><b>Kanıt</b></td><td>Sonuç söylenir.</td><td>Gözlem var, kayıt yok.</td><td>Ölçüm, sayım ya da kayıt kullanılır.</td></tr>
+        <tr><td><b>Açıklama</b></td><td>Açıklama tahminden bağımsızdır.</td><td>Açıklama doğru ama ilk fikre dönmez.</td><td>İlk fikir kanıta göre yeniden değerlendirilir.</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="panel" style="margin-top:22px">
+    <h3>Online eğitimde kullanmak</h3>
+    <p class="note">Ekranınızı paylaşın ve Projeksiyon düğmesiyle yazıları büyütün. Katılımcılar tahminlerini sohbete yazsın; çoğunluğun seçimini tıklayıp kilitleyin, cevapları + / − ile sayın. Katılımcılar bağlantıyı kendileri de açıp deneyleri bireysel olarak yapabilir; her kişinin çalışması kendi tarayıcısında saklanır.</p>
+    <p class="note">Her provadan sonra ve eğitime başlamadan önce kayıtları temizleyin.</p>
+    <div><button class="btn ghost small" id="resetAll">Tüm kayıtları temizle</button></div>
+  </div>
+</section>
+</main>
+<footer><div class="wrap">GÖRÜNÜR · Bilim Sergisi Tasarımı Atölyesi · İstanbul Öğretmen Akademileri, Sayısal Bilimler Akademisi · Selma Alhan</div></footer>
+
+<div class="toast" id="toast" hidden></div>
+<div class="overlay" id="overlay" hidden></div>
+
+<script>
+/* ---------- yardımcılar ---------- */
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const LS='gorunur3:';
+const store={get(k,d){try{const v=localStorage.getItem(LS+k);return v?JSON.parse(v):d}catch(e){return d}},set(k,v){try{localStorage.setItem(LS+k,JSON.stringify(v))}catch(e){}}};
+let toastT;function toast(m){const t=$('#toast');t.textContent=m;t.hidden=false;clearTimeout(toastT);toastT=setTimeout(()=>t.hidden=true,3200)}
+const pct=(a,b)=>b?Math.round(100*a/b):0;
+
+/* ---------- durum ---------- */
+let me=store.get('me',{oy:{},stage:{},karar:{},sinif:{},formul:null});
+let sergi=store.get('sergi',{});
+let ziyaret=store.get('ziyaret',{});
+function saveMe(){store.set('me',me)}
+
+/* ---------- sınıf sayacı (yerel) ---------- */
+me.tally=me.tally||{};
+function T(id){return me.tally[id]||(me.tally[id]={})}
+function bump(id,k,d){const t=T(id);t[k]=Math.max(0,(t[k]||0)+d);saveMe();renderLive()}
+function sumT(id){return Object.values(T(id)).reduce((a,b)=>a+b,0)}
+function adj(id,k){return `<span class="adj"><button type="button" data-t="${id}" data-k="${k}" data-d="-1" aria-label="Bir azalt">−</button><button type="button" data-t="${id}" data-k="${k}" data-d="1" aria-label="Bir artır">+</button></span>`}
+document.addEventListener('click',ev=>{const b=ev.target.closest('[data-t]');if(b)bump(b.dataset.t,b.dataset.k,+b.dataset.d)});
+function push(){}
+
+/* veri birleştirme: bu cihazdaki kayıtlar */
+function votes(){return[{id:'me',oy:me.oy,karar:me.karar,formul:me.formul}]}
+function exhibits(){return sergi.asili&&sergi.ad?[{...sergi,id:'me',mine:true}]:[]}
+function visits(){return[{id:'me',kart:ziyaret}]}
+
+function renderLive(){
+  const n=Math.max(0,...EXPS.map(e=>sumT(e.id)));
+  $('#hCount').textContent=n;
+  let w=0,t=0;for(const e of EXPS){const s=sumT(e.id);t+=s;w+=s-(T(e.id)[e.rk]||0)}
+  $('#hWrong').textContent=t?`%${pct(w,t)}`:'–';
+  $('#hEx').textContent=exhibits().length;
+  $('#hVis').textContent=Object.keys(ziyaret).length;
+  EXPS.forEach(e=>drawDist(e));drawJury();drawFormulaStats();
+  if(view==='muze')renderMuseum();
+}
+
+/* ---------- yönlendirme ---------- */
+const VIEWS=['basla','algi','mahkeme','formul','studyo','muze','rehber'];let view='basla';
+function route(){const h=(location.hash||'#basla').slice(1);view=VIEWS.includes(h)?h:'basla';
+  VIEWS.forEach(v=>$('#v-'+v).hidden=v!==view);
+  document.querySelectorAll('#tabs a').forEach(a=>a.classList.toggle('on',a.dataset.v===view));
+  renderLive();window.scrollTo(0,0)}
+addEventListener('hashchange',route);
+$('#projBtn').onclick=e=>{const on=document.documentElement.classList.toggle('proj');e.currentTarget.setAttribute('aria-pressed',on)};
+
+/* ---------- ALGI LABORATUVARI ---------- */
+const STEPS=[['Merak','--p1'],['Tahmin','--p2'],['Gözlem','--p3'],['Kanıt','--p4'],['Açıklama','--p5']];
+const SENT='FINISHED FILES ARE THE RESULT OF YEARS OF SCIENTIFIC STUDY COMBINED WITH THE EXPERIENCE OF YEARS';
+const EXPS=[
+ {id:'e1',no:'Deney 1',title:'Hangi yatay çizgi daha uzun?',merak:'Gözümüz uzunluğu ölçer mi, yoksa tahmin mi eder?',
+  opts:[['A','A daha uzun'],['B','B daha uzun'],['E','İkisi eşit']],right:'E',rk:'E',isRight:a=>a==='E',
+  kanit:'Cetvel iki yatay bölümü de 300 birim ölçüyor. Ok uçları söküldüğünde çizgiler üst üste örtüşüyor.',
+  aciklama:'Müller-Lyer yanılsaması: Beyin, uçlardaki açıları derinlik ipucu gibi yorumlar ve uzunluğu bağlama göre ayarlar. Kanıt, gözün değil ölçümün sonucudur.',
+  sor:'İlk tahminin neydi? Hangi kanıt fikrini değiştirdi?'},
+ {id:'e2',no:'Deney 2',title:'Ortadaki turuncu dairelerden hangisi büyük?',merak:'Bir şeyin büyüklüğü çevresine göre değişir mi?',
+  opts:[['L','Soldaki'],['R','Sağdaki'],['E','Eşit']],right:'E',rk:'E',isRight:a=>a==='E',
+  kanit:'İki merkez dairenin yarıçapı da 18 birim. Sağdaki soldakinin üzerine taşındığında kenarlar tam çakışıyor.',
+  aciklama:'Ebbinghaus yanılsaması: Büyüklüğü mutlak değil, komşularına göre değerlendiririz. Büyük daireler arasındaki daire küçük, küçükler arasındaki büyük görünür.',
+  sor:'Sınıfında hangi kazanımda "bağlam algıyı değiştirir" fikrini kullanabilirsin?'},
+ {id:'e3',no:'Deney 3',title:'Dikkat Dedektifi: Cümlede kaç F var?',merak:'Okurken her harfi gerçekten görür müyüz?',
+  num:true,right:6,rk:'6',isRight:a=>Number(a)===6,
+  kanit:'Harfler tek tek işaretlendiğinde toplam 6 F bulunuyor. Üç tanesi "OF" kelimelerinde.',
+  aciklama:'Akıcı okurken beyin sık geçen kısa kelimeleri (OF gibi) ses olarak "v" diye işler ve atlar. Sistemli sayım, ilk bakıştaki gözlemi düzeltir.',
+  sor:'Öğrencilerin gözden kaçırdığı "OF"lar senin dersinde neler?'}
+];
+function stageOf(e){return me.stage[e.id]||(me.oy[e.id]!==undefined&&me.oy[e.id]!==''?3:2)}
+function setStage(e,s){me.stage[e.id]=Math.max(stageOf(e),s);saveMe();paintExp(e)}
+
+function expShell(e){return `<article class="exp" id="x-${e.id}">
+ <div class="exp-top"><div><p class="eyebrow">${e.no}</p><h3 style="margin-top:6px">${esc(e.title)}</h3></div><div class="steps" data-steps></div></div>
+ <div class="exp-body">
+  <div class="stage">
+   <div><p class="phase-label" style="--c:var(--p1)">1 · Merak</p><p class="q" style="margin-top:6px">${esc(e.merak)}</p></div>
+   <div class="canvas" data-canvas></div>
+   <div data-tools></div>
+  </div>
+  <div class="side">
+   <div data-predict></div>
+   <div data-dist></div>
+   <div data-ev></div>
+  </div>
+ </div></article>`}
+
+function paintSteps(e){const s=stageOf(e);$(`#x-${e.id} [data-steps]`).innerHTML=STEPS.map(([n,c],i)=>`<span style="--c:var(${c})" class="${i+1<s?'done':i+1===s?'now':''}">${i+1} ${n}</span>`).join('')}
+
+function paintPredict(e){const box=$(`#x-${e.id} [data-predict]`);const a=me.oy[e.id];const locked=a!==undefined&&a!=='';
+  let h=`<p class="phase-label" style="--c:var(--p2)">2 · Tahmin ${locked?'· kilitlendi':''}</p>`;
+  if(e.num){h+=`<div style="display:flex;gap:8px;margin-top:8px;align-items:center;flex-wrap:wrap"><input class="num-in" type="number" min="0" max="30" id="in-${e.id}" value="${locked?esc(a):''}" ${locked?'disabled':''} aria-label="İlk sayım"><button class="btn small" data-lock ${locked?'disabled':''}>${locked?'Kaydedildi':'Tahmini kilitle'}</button></div><p class="note" style="margin-top:6px">Cümleye bir kez bakın ve sayın. Geri dönmek yok.</p>`}
+  else h+=`<div class="choices" style="margin-top:8px">${e.opts.map(([k,l])=>`<button class="choice ${a===k?'sel':''}" data-k="${k}" ${locked?'disabled':''}>${l}</button>`).join('')}</div>`;
+  box.innerHTML=h;
+  if(e.num){const b=box.querySelector('[data-lock]');if(b)b.onclick=()=>{const v=$('#in-'+e.id).value;if(v===''){toast('Önce bir sayı yazın.');return}me.oy[e.id]=Number(v);setStage(e,3);renderLive()}}
+  else box.querySelectorAll('[data-k]').forEach(b=>b.onclick=()=>{me.oy[e.id]=b.dataset.k;setStage(e,3);renderLive()})}
+
+function drawDist(e){const box=$(`#x-${e.id} [data-dist]`);if(!box)return;const a=me.oy[e.id];
+  if(a===undefined||a===''){box.innerHTML=`<p class="lock">Sınıfın tahmin panosu, tahmin kilitlenince açılır. Önce sohbetten cevapları toplayın.</p>`;return}
+  const show=stageOf(e)>=4;const t=T(e.id);
+  const rows=e.num?['≤4','5','6','7+'].map(k=>[k,k+' F']):e.opts;
+  const tot=sumT(e.id);const wrong=tot-(t[e.rk]||0);
+  box.innerHTML=`<p class="eyebrow">Sınıfın tahmini · ${tot} kişi</p><p class="note" style="margin-top:4px">Sohbetten gelen her cevabı + ile sayın.</p><div class="bars" style="margin-top:10px">${rows.map(([k,l])=>{const c=t[k]||0;return`<div class="barrow tally ${show&&k===e.rk?'correct':''}"><span class="lab">${l}</span><div class="track"><div class="fill" style="width:${pct(c,tot)}%"></div></div><span class="num">${c} · %${pct(c,tot)}</span>${adj(e.id,k)}</div>`}).join('')}</div>`+
+   (show&&tot?`<div style="display:flex;gap:12px;align-items:baseline;margin-top:14px"><span class="stat">%${pct(wrong,tot)}</span><span class="note">ilk tahmininde yanıldı. Yanılmak, bilimin başladığı yerdir.</span></div>`:'')}
+
+function paintEv(e){const box=$(`#x-${e.id} [data-ev]`);const s=stageOf(e);
+  if(s<3){box.innerHTML='';return}
+  if(s===3){box.innerHTML=`<p class="note">Gözlem araçlarını kullanın. Kendi kanıtınızı ürettiğinizde açın.</p><button class="btn small" data-go4 style="background:var(--p4);color:var(--on-marker)">4 · Kanıtı göster</button>`;box.querySelector('[data-go4]').onclick=()=>{setStage(e,4);reveal(e)};return}
+  let h=`<div><p class="phase-label" style="--c:var(--p4)">4 · Kanıt</p><div class="evidence" style="margin-top:8px">${esc(e.kanit)}</div></div>`;
+  if(s===4)h+=`<button class="btn small" data-go5 style="background:var(--p5)">5 · Açıkla</button>`;
+  else h+=`<div class="explain"><p class="phase-label" style="--c:var(--p5)">5 · Açıklama</p><p style="margin-top:6px">${esc(e.aciklama)}</p><p class="note" style="margin-top:8px"><b>Yansıtma:</b> ${esc(e.sor)}</p></div><button class="btn ghost small" data-reset>Deneyi sıfırla</button>`;
+  box.innerHTML=h;
+  const g=box.querySelector('[data-go5]');if(g)g.onclick=()=>setStage(e,5);
+  const r=box.querySelector('[data-reset]');if(r)r.onclick=()=>{delete me.oy[e.id];delete me.stage[e.id];delete me.tally[e.id];saveMe();mountExp(e);renderLive()}}
+
+function paintExp(e){paintSteps(e);paintPredict(e);drawDist(e);paintEv(e);
+  const t=$(`#x-${e.id} [data-tools]`);t.querySelectorAll('.tool').forEach(x=>x.setAttribute('aria-disabled',stageOf(e)<3))
+  if(e.id==='e3'){const L=$('#x-e3 .letters');if(L)L.classList.toggle('locked',stageOf(e)<3)}}
+
+/* deney çizimleri */
+function mountExp(e){
+  const x=$('#x-'+e.id);const c=x.querySelector('[data-canvas]'),t=x.querySelector('[data-tools]');
+  if(e.id==='e1'){
+    c.innerHTML=`<svg viewBox="0 0 600 230" role="img" aria-label="Müller-Lyer çizgileri A ve B"><g stroke="var(--ink)" stroke-width="5" fill="none" stroke-linecap="round"><path id="mlA"/><path id="mlB"/></g>
+     <text x="40" y="78" font-family="Bricolage Grotesque,system-ui" font-weight="800" font-size="24" fill="var(--ink)">A</text><text x="40" y="178" font-family="Bricolage Grotesque,system-ui" font-weight="800" font-size="24" fill="var(--ink)">B</text>
+     <g id="ruler" opacity="0" style="transition:opacity .4s">${[70,170].map(y=>`<rect x="150" y="${y-34}" width="300" height="16" fill="var(--marker)" opacity=".85"/>${Array.from({length:31},(_,i)=>`<line x1="${150+i*10}" x2="${150+i*10}" y1="${y-34}" y2="${y-34+(i%5?6:12)}" stroke="var(--on-marker)" stroke-width="1"/>`).join('')}<text x="458" y="${y-22}" font-family="JetBrains Mono,monospace" font-size="13" font-weight="700" fill="var(--ink)">300</text>`).join('')}</g></svg>`;
+    t.innerHTML=`<div class="tool"><p class="phase-label" style="--c:var(--p3)">3 · Gözlem araçları</p><label for="fin">Ok uçlarını sök</label><input type="range" id="fin" min="0" max="100" value="100"><label style="display:flex;gap:8px;align-items:center;font-weight:600"><input type="checkbox" id="rul"> Cetvelle ölç</label></div>`;
+    const draw=f=>{const d=34*f,dx=d*Math.cos(.6),dy=d*Math.sin(.6);
+      $('#mlA').setAttribute('d',`M150 70H450M150 70l-${dx} -${dy}M150 70l-${dx} ${dy}M450 70l${dx} -${dy}M450 70l${dx} ${dy}`);
+      $('#mlB').setAttribute('d',`M150 170H450M150 170l${dx} -${dy}M150 170l${dx} ${dy}M450 170l-${dx} -${dy}M450 170l-${dx} ${dy}`)};
+    draw(1);$('#fin').oninput=ev=>draw(ev.target.value/100);$('#rul').onchange=ev=>$('#ruler').setAttribute('opacity',ev.target.checked?1:0);
+  }
+  if(e.id==='e2'){
+    const ring=(cx,n,r,d)=>Array.from({length:n},(_,i)=>{const a=i*2*Math.PI/n;return`<circle cx="${(cx+d*Math.cos(a)).toFixed(1)}" cy="${(120+d*Math.sin(a)).toFixed(1)}" r="${r}" fill="var(--p2)" opacity=".75"/>`}).join('');
+    c.innerHTML=`<svg viewBox="0 0 600 240" role="img" aria-label="Ebbinghaus daireleri"><g id="halo" style="transition:opacity .3s">${ring(150,6,36,74)}${ring(450,8,11,38)}</g>
+      <circle cx="150" cy="120" r="18" fill="#EE8A2B"/><g id="mover" style="transition:transform 1.2s cubic-bezier(.4,.1,.2,1)"><circle id="moverC" cx="450" cy="120" r="18" fill="#EE8A2B" stroke="var(--ink)" stroke-width="0" stroke-dasharray="4 3"/></g></svg>`;
+    t.innerHTML=`<div class="tool"><p class="phase-label" style="--c:var(--p3)">3 · Gözlem araçları</p><label for="halo-r">Çevredeki daireleri soldur</label><input type="range" id="halo-r" min="0" max="100" value="100"><div><button class="btn small" id="ovl" style="background:var(--p3)">Sağdakini soldakinin üstüne taşı</button></div></div>`;
+    $('#halo-r').oninput=ev=>$('#halo').style.opacity=ev.target.value/100;
+    let on=false;$('#ovl').onclick=()=>{on=!on;$('#mover').style.transform=on?'translateX(-300px)':'';$('#moverC').setAttribute('stroke-width',on?2:0);$('#moverC').setAttribute('fill-opacity',on?.7:1);$('#ovl').textContent=on?'Yerine geri koy':'Sağdakini soldakinin üstüne taşı'};
+  }
+  if(e.id==='e3'){
+    c.innerHTML=`<div class="letters" id="letters">${SENT.split(' ').map((w,wi)=>`<span class="w">${[...w].map((ch,ci)=>`<span class="l" data-f="${ch==='F'?1:0}" data-i="${wi}-${ci}">${ch}</span>`).join('')}</span>`).join('')}</div>`;
+    t.innerHTML=`<div class="tool"><p class="phase-label" style="--c:var(--p3)">3 · Gözlem: sistemli sayım</p><p class="note">Bulduğunuz her F harfine dokunun. Yanlış işaretlemeyi tekrar dokunarak kaldırın.</p><p><b class="mono" id="fMarked">0</b> harf işaretlendi</p></div>`;
+    c.querySelectorAll('.l').forEach(l=>l.onclick=()=>{if(stageOf(e)<3)return;l.classList.toggle('mk');$('#fMarked').textContent=c.querySelectorAll('.l.mk').length});
+  }
+  paintExp(e);if(stageOf(e)>=4)reveal(e)}
+function reveal(e){if(e.id==='e1'){$('#fin').value=0;$('#fin').dispatchEvent(new Event('input'));$('#rul').checked=true;$('#ruler').setAttribute('opacity',1)}
+  if(e.id==='e2'){$('#mover').style.transform='translateX(-300px)';$('#moverC').setAttribute('stroke-width',2);$('#moverC').setAttribute('fill-opacity',.7);$('#ovl').textContent='Yerine geri koy'}
+  if(e.id==='e3')document.querySelectorAll('#letters .l[data-f="1"]').forEach(l=>l.classList.add('rv'))}
+$('#exps').innerHTML=EXPS.map(expShell).join('');EXPS.forEach(mountExp);
+
+/* ---------- BİLİM MAHKEMESİ ---------- */
+const LBL=['İddia','Tanıklık','Kanıt','Bulgu'];
+const CASES=[
+ {id:'m1',name:'Dava 1 · Biyoloji',claim:'Karanlıkta bitkiler hiç solunum yapmaz.',right:'red',
+  items:[['Bir öğrenci, bitkilerin gece "uyuduğunu" annesinden duyduğunu söyledi.','Tanıklık','Aktarılan bir söz; ölçüm ya da kayıt değil.'],
+   ['Karanlıkta kapalı kaba konan bitkinin yanındaki kireç suyu bulanıklaştı.','Kanıt','Tekrar edilebilir bir deney sonucu: kireç suyu CO₂ ile bulanıklaşır.'],
+   ['Kaptaki CO₂ sensörü karanlıkta iki saat boyunca artış ölçtü.','Kanıt','Ölçüm cihazıyla kaydedilmiş veri.'],
+   ['Karanlıkta CO₂ üretildiğine göre bitki solunum yapmayı sürdürüyor.','Bulgu','Kanıtlardan çıkarılan anlam.'],
+   ['Işığa bağlı fotosentez ile hücresel solunum farklı süreçlerdir.','Bulgu','Kanıtları yorumlamayı sağlayan bilimsel çıkarım.']],
+  karar:'İddia desteklenmiyor. Bitkiler hücresel solunumu gece de gündüz de yapar; ışıkta fotosentez ayrıca gerçekleşir.'},
+ {id:'m2',name:'Dava 2 · Fizik',claim:'Ağır cisimler hafif cisimlerden daha hızlı düşer.',right:'red',
+  items:[['Bir katılımcı, taşın tüyden çok önce yere düştüğünü gördüğünü söyledi.','Tanıklık','Gözlem anlatısı; hava direnci gibi değişkenler kontrol edilmemiş.'],
+   ['Aynı boyutta, kütleleri farklı iki top 2 m yükseklikten bırakıldı; video kaydında yere aynı karede değdiler.','Kanıt','Değişkenleri kontrol edilmiş, kayıtlı deney.'],
+   ['Havası boşaltılmış tüpte tüy ile madeni para aynı anda düştü.','Kanıt','Hava direnci ortadan kaldırılarak yapılan deney.'],
+   ['Hava direnci ihmal edildiğinde düşme süresi kütleye bağlı değildir.','Bulgu','İki kanıttan çıkarılan genelleme.'],
+   ['Tüyün yavaş düşmesinin nedeni ağırlığı değil, hava direncidir.','Bulgu','Tanıklıktaki gözlemi kanıtla yeniden yorumlar.']],
+  karar:'İddia desteklenmiyor. Hava direnci yoksa tüm cisimler aynı ivmeyle düşer; tanıklıktaki fark hava direncinden kaynaklanır.'}];
+let curCase=0;const checked={};
+function renderCases(){
+  $('#caseTabs').innerHTML=CASES.map((c,i)=>`<button class="case-tab ${i===curCase?'on':''}" data-i="${i}">${c.name}</button>`).join('');
+  $('#caseTabs').querySelectorAll('button').forEach(b=>b.onclick=()=>{curCase=+b.dataset.i;renderCases()});
+  const c=CASES[curCase];const mine=me.sinif[c.id]||{};const ck=checked[c.id];
+  $('#docket').innerHTML=`<div class="docket"><div class="docket-head"><p class="eyebrow">Dava dosyası</p><p class="claim">${esc(c.claim)}</p><p class="note">Her ifadeyi doğru türe yerleştirin.</p></div>
+   <div class="items">${c.items.map(([t,r,why],i)=>`<div class="item"><div class="txt">${esc(t)}${ck?`<div class="why">${mine[i]===r?'✓':'✗ Doğrusu: '+r+'.'} ${esc(why)}</div>`:''}</div><div class="chips">${LBL.slice(1).map(l=>{let cls=mine[i]===l?'sel':'';if(ck&&mine[i]===l)cls=l===r?'right':'wrong';return`<button class="chip ${cls}" data-i="${i}" data-l="${l}">${l}</button>`}).join('')}</div></div>`).join('')}</div>
+   <div style="padding:16px 22px;display:flex;gap:10px;flex-wrap:wrap;align-items:center;border-bottom:1px solid var(--line)"><button class="btn small" id="ckBtn">Dosyayı kontrol et</button><span class="note" id="ckRes">${ck?`${c.items.filter(([,r],i)=>mine[i]===r).length} / ${c.items.length} doğru yerleştirme`:''}</span></div>
+   <div class="verdict"><div><p class="eyebrow">Jüri kararı</p><p class="q" style="margin-top:8px">Kanıtlara göre iddia…</p><div class="choices" style="margin-top:10px">${[['destek','Destekleniyor'],['red','Desteklenmiyor']].map(([k,l])=>`<button class="choice ${me.karar[c.id]===k?'sel':''}" data-v="${k}">${l}</button>`).join('')}</div>
+   ${me.karar[c.id]?`<div class="explain" style="margin-top:14px"><p>${esc(c.karar)}</p></div>`:''}</div><div id="jury"></div></div></div>`;
+  $('#docket').querySelectorAll('.chip').forEach(b=>b.onclick=()=>{me.sinif[c.id]={...(me.sinif[c.id]||{}),[b.dataset.i]:b.dataset.l};store.set('me',me);checked[c.id]=false;renderCases()});
+  $('#ckBtn').onclick=()=>{if(Object.keys(me.sinif[c.id]||{}).length<c.items.length){toast('Önce tüm ifadeleri yerleştirin.');return}checked[c.id]=true;renderCases()};
+  $('#docket').querySelectorAll('[data-v]').forEach(b=>b.onclick=()=>{me.karar[c.id]=b.dataset.v;saveMe();renderCases();renderLive()});
+  drawJury()}
+function drawJury(){const c=CASES[curCase];const j=$('#jury');if(!j)return;
+  if(!me.karar[c.id]){j.innerHTML=`<p class="lock">Jüri panosu, karar verilince açılır. Önce sınıfa oylatın.</p>`;return}
+  const t=T(c.id),d=t.destek||0,r=t.red||0,n=d+r;
+  j.innerHTML=`<p class="eyebrow">Sınıfın jürisi · ${n} oy</p><div class="bars" style="margin-top:10px"><div class="barrow tally"><span class="lab">Destekleniyor</span><div class="track"><div class="fill" style="width:${pct(d,n)}%;background:var(--p5)"></div></div><span class="num">${d} · %${pct(d,n)}</span>${adj(c.id,'destek')}</div><div class="barrow tally"><span class="lab">Desteklenmiyor</span><div class="track"><div class="fill" style="width:${pct(r,n)}%;background:var(--p3)"></div></div><span class="num">${r} · %${pct(r,n)}</span>${adj(c.id,'red')}</div></div>`}
+renderCases();
+
+/* ---------- KAYIP FORMÜL ---------- */
+const FSTEPS=['Merak edilen soruyu belirle','Tahmin / hipotez oluştur','Yöntemi ve değişkenleri planla','Gözlem veya deney yap','Veri ve kanıtları kaydet','Bulguları yorumla','Sonuçları paylaş, yeni soru sor'];
+let order=[],selSlot=null,t0=null,tick=null,done=false;
+function shuffle(){order=FSTEPS.map((_,i)=>i);do{for(let i=order.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[order[i],order[j]]=[order[j],order[i]]}}while(order.every((x,i)=>x===i));
+  selSlot=null;t0=null;done=false;clearInterval(tick);$('#clock').textContent='00:00';$('#fResult').textContent='Sıralamayı bitirdiğinizde otomatik kontrol edilir.';drawSlots()}
+const mmss=s=>`${String(Math.floor(s/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`;
+function start(){if(t0||done)return;t0=Date.now();tick=setInterval(()=>$('#clock').textContent=mmss(Math.floor((Date.now()-t0)/1000)),250)}
+function swap(i,j){if(done||j<0||j>=order.length)return;start();[order[i],order[j]]=[order[j],order[i]];selSlot=null;drawSlots();checkF()}
+function drawSlots(){$('#slots').innerHTML=order.map((v,i)=>`<div class="slot ${selSlot===i?'sel':''} ${done?'good':''}" data-i="${i}" tabindex="0" role="button" aria-label="${i+1}. sıra: ${FSTEPS[v]}"><span class="i">${i+1}</span><span>${FSTEPS[v]}</span><span class="mv"><button data-u="${i}" aria-label="Yukarı">↑</button><button data-d="${i}" aria-label="Aşağı">↓</button></span></div>`).join('');
+  $('#slots').querySelectorAll('.slot').forEach(s=>{const go=ev=>{if(ev.target.closest('button'))return;const i=+s.dataset.i;start();if(selSlot===null){selSlot=i;drawSlots()}else if(selSlot===i){selSlot=null;drawSlots()}else swap(selSlot,i)};s.onclick=go;s.onkeydown=ev=>{if(ev.key==='Enter'||ev.key===' '){ev.preventDefault();go(ev)}}});
+  $('#slots').querySelectorAll('[data-u]').forEach(b=>b.onclick=()=>swap(+b.dataset.u,+b.dataset.u-1));
+  $('#slots').querySelectorAll('[data-d]').forEach(b=>b.onclick=()=>swap(+b.dataset.d,+b.dataset.d+1))}
+function checkF(){const right=order.filter((x,i)=>x===i).length;
+  if(right===order.length){done=true;clearInterval(tick);const s=Math.max(1,Math.round((Date.now()-t0)/1000));$('#clock').textContent=mmss(s);
+    $('#fResult').innerHTML=`<b style="color:var(--ok)">Formül bulundu.</b> ${mmss(s)} sürede tamamladınız.`;if(!me.formul||s<me.formul){me.formul=s;saveMe()}drawSlots();renderLive()}
+  else $('#fResult').textContent=`${right} / ${order.length} basamak yerinde.`}
+function drawFormulaStats(){if(!me.formul){$('#fMedian').textContent='–';$('#fCount').textContent='Henüz tamamlanmadı.';return}
+  $('#fMedian').textContent=mmss(me.formul);$('#fCount').textContent='Bu cihazdaki en iyi süre. Katılımcılara kendi sürelerini sohbete yazdırın.'}
+$('#fShuffle').onclick=shuffle;shuffle();
+
+/* ---------- SERGİ STÜDYOSU ---------- */
+const SF=['grup','brans','sinif','kazanim','ad','merak','tahmin','eylem','kanit','aciklama','malzeme','guvenlik'];
+SF.forEach(k=>{const el=$('#s_'+k);el.value=sergi[k]||'';el.addEventListener('input',()=>{sergi[k]=el.value;store.set('sergi',sergi);paintStudio()})});
+const VERBS=/(ölç|bırak|it|çek|dök|çevir|say|tart|bas|döndür|karşılaştır|yerleştir|eğ|üfle|şişir|yak|sür|kaydır|tut|dinle|bak|sıkıştır|ekle|karıştır|koy|seç|dokun|zamanla)/i;
+const MEAS=/(\d|cm|mm|metre|saniye|sn|gram|kg|derece|°|sayı|say|ölç|kayıt|kaydet|tablo|grafik|süre|mesafe|kronometre|cetvel|terazi|termometre)/i;
+function lensChecks(s){return[
+ ['Merak sorusu soru olarak soruluyor',/\?\s*$/.test((s.merak||'').trim())],
+ ['Ziyaretçiden önce tahmin alınıyor',(s.tahmin||'').trim().length>8],
+ ['Ziyaretçi elleriyle bir işlem yapıyor',VERBS.test(s.eylem||'')],
+ ['Kanıt ölçülebilir ya da sayılabilir',MEAS.test(s.kanit||'')],
+ ['Açıklama ilk tahmine geri dönüyor',/(tahmin|çünkü|neden|bu yüzden|beklenen)/i.test(s.aciklama||'')],
+ ['Kazanım yazılmış',(s.kazanim||'').trim().length>10],
+ ['Malzemeler belirlenmiş',(s.malzeme||'').trim().length>3],
+ ['Güvenlik düşünülmüş',(s.guvenlik||'').trim().length>3]]}
+function exCard(s){const f=(c,l,v)=>v?`<div style="--c:var(${c})"><dt>${l}</dt><dd>${esc(v)}</dd></div>`:'';
+  return `<p class="eyebrow">${esc([s.brans,s.sinif].filter(Boolean).join(' · ')||'Sergi etiketi')}</p><div class="t">${esc(s.ad||'Sergi adı')}</div>
+  <div><span class="mq">${esc(s.merak||'Ziyaretçiye soracağınız merak sorusu burada görünecek.')}</span></div>
+  <dl>${f('--p2','Önce tahmin et',s.tahmin)}${f('--p3','Şimdi sen dene',s.eylem)}${f('--p4','Kanıtını bul',s.kanit)}</dl>
+  <p class="note">${esc(s.grup?'Hazırlayan: '+s.grup:'')}</p>`}
+function paintStudio(){const c=lensChecks(sergi);const sc=Math.round(100*c.filter(x=>x[1]).length/c.length);
+  $('#lensArc').setAttribute('stroke-dasharray',`${(sc/100*264).toFixed(1)} 264`);$('#lensArc').setAttribute('stroke',sc>=75?'var(--ok)':sc>=40?'var(--p4)':'var(--p5)');$('#lensTxt').textContent=sc;
+  $('#checks').innerHTML=c.map(([l,ok])=>`<div class="${ok?'y':''}">${l}</div>`).join('');
+  $('#labelCard').innerHTML=exCard(sergi);
+  $('#hangBtn').textContent=sergi.asili?'Müzedeki sergiyi güncelle':'Müzeye as'}
+paintStudio();
+function fillS(o){Object.entries(o).forEach(([k,v])=>{if(SF.includes(k)&&typeof v==='string'){sergi[k]=v;$('#s_'+k).value=v}});store.set('sergi',sergi);paintStudio()}
+let armEx=false;$('#exampleBtn').onclick=e=>{const has=SF.some(k=>(sergi[k]||'').trim());if(has&&!armEx){armEx=true;e.target.textContent='Üzerine yazılsın mı? Tekrar dokun';setTimeout(()=>{armEx=false;e.target.textContent='Örnek sergiyle doldur'},3500);return}armEx=false;e.target.textContent='Örnek sergiyle doldur';
+  fillS({brans:'Fizik',sinif:'9. sınıf',kazanim:'Etki-tepki kuvvetlerini gözlemleyerek kuvvet ile hareket arasındaki ilişkiyi açıklar.',ad:'İpteki Roket',merak:'Balonun ağzını açıp bırakırsak, roket hangi yöne ve ne kadar uzağa gider?',tahmin:'Ziyaretçi roketin yönünü (ileri / geri) ve gideceği mesafeyi santimetre olarak kartına yazar.',eylem:'Ziyaretçi balonu 3 nefeste şişirir, pipete bantlar, ipin başlangıç çizgisine koyar ve bırakır.',kanit:'İpin yanındaki cetvel şeritten mesafe cm olarak okunur; üç deneme tabloya kaydedilir.',aciklama:'Balon havayı geriye iter, hava da balonu ileriye iter. Ölçülen mesafeyi ilk tahminle karşılaştır: neden farklı çıktı?',malzeme:'Balon, kalın pipet, 4 m misina, bant, cetvel şerit, kayıt tablosu',guvenlik:'Lateks alerjisine karşı lateks içermeyen balon; misina göz hizasının altında gerilir.'})};
+$('#studioForm').onsubmit=e=>{e.preventDefault();if(!(sergi.ad||'').trim()||!(sergi.merak||'').trim()){toast('Müzeye asmak için en az sergi adı ve merak sorusu gerekli.');return}
+  sergi.asili=true;store.set('sergi',sergi);const d={};SF.forEach(k=>d[k]=sergi[k]||'');d.t=Date.now();push('sergiler',d);paintStudio();
+  toast('Sergi müzeye asıldı.');setTimeout(()=>location.hash='#muze',600)};
+$('#copyBtn').onclick=async()=>{const s=sergi;const txt=`${s.ad||''}\n${[s.brans,s.sinif].filter(Boolean).join(' · ')}\nKazanım: ${s.kazanim||''}\n\n1 MERAK: ${s.merak||''}\n2 TAHMİN: ${s.tahmin||''}\n3 GÖZLEM (ziyaretçinin işlemi): ${s.eylem||''}\n4 KANIT: ${s.kanit||''}\n5 AÇIKLAMA: ${s.aciklama||''}\n\nMalzemeler: ${s.malzeme||''}\nGüvenlik: ${s.guvenlik||''}\nHazırlayan: ${s.grup||''}`;
+  try{await navigator.clipboard.writeText(txt);toast('Sergi kartı kopyalandı.')}catch(e){toast('Kopyalanamadı; metni formdan seçebilirsiniz.')}};
+
+/* ---------- BİLİM MÜZESİ ---------- */
+const DEMO={id:'demo',demo:true,ad:'Kalem Neden Kırık Görünüyor?',grup:'Örnek sergi',brans:'Fizik',sinif:'9. sınıf',merak:'Suya batırdığımız kalem gerçekten kırılır mı?',tahmin:'Kalemin su içindeki görüntüsü havadakiyle aynı doğrultuda mı olacak?',eylem:'Ziyaretçi kalemi şeffaf bardaktaki suya koyar ve üç farklı açıdan bakar.',kanit:'Su-hava sınırında görüntünün kaydığı noktayı kâğıda çizer.',aciklama:'Işık farklı ortamlar arasında geçerken yön değiştirir; kalem kırılmaz, görüntü kayar.'};
+function visitsFor(id){const out=[];for(const d of visits()){const k=d.kart&&d.kart[id];if(k)out.push(k)}return out}
+function renderMuseum(){const ex=exhibits();const list=[...ex,DEMO];
+  $('#museum').innerHTML=(ex.length?'':`<div class="empty" style="grid-column:1/-1"><strong>Müze henüz boş</strong><p>Sergi Stüdyosu'nda "Müzeye as" dediğinizde serginiz burada belirir. Yandaki örnek sergiyle ziyaretçi kartını deneyebilirsiniz.</p><a class="btn small" href="#studyo">Sergimi tasarla</a></div>`)+
+  list.map(s=>{const v=visitsFor(s.id);const ch=v.filter(k=>k.degisti==='evet').length;const done=!!ziyaret[s.id];
+    return`<article class="ex ${s.mine?'mine':''}"><span class="badge ${s.mine?'me':''}">${s.mine?'SİZİN':s.demo?'ÖRNEK':esc(s.brans||'SERGİ').toUpperCase()}</span>
+     <h3>${esc(s.ad)}</h3><p class="who">${esc([s.grup,s.sinif].filter(Boolean).join(' · '))}</p>
+     <p class="mq">${esc(s.merak)}</p>${s.eylem?`<p class="task"><b>Görev:</b> ${esc(s.eylem)}</p>`:''}
+     <div class="meta"><span><b>${v.length}</b> ziyaretçi</span><span><b>%${pct(ch,v.length)}</b> fikrini değiştirdi</span></div>
+     <div style="display:flex;gap:8px;flex-wrap:wrap">${s.mine?`<button class="btn small" data-see="${esc(s.id)}">Ziyaretçi kanıtları</button><a class="btn ghost small" href="#studyo">Düzenle</a>`:`<button class="btn small ${done?'ghost':''}" data-visit="${esc(s.id)}">${done?'Kartımı düzenle':'Ziyaretçi kartı doldur'}</button>`}</div></article>`}).join('');
+  $('#museum').querySelectorAll('[data-visit]').forEach(b=>b.onclick=()=>openVisit(list.find(s=>s.id===b.dataset.visit)));
+  $('#museum').querySelectorAll('[data-see]').forEach(b=>b.onclick=()=>openSee(list.find(s=>s.id===b.dataset.see)))}
+function closeOv(){$('#overlay').hidden=true;$('#overlay').innerHTML=''}
+$('#overlay').onclick=e=>{if(e.target.id==='overlay')closeOv()};addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('#overlay').hidden)closeOv()});
+function openVisit(s){const k=ziyaret[s.id]||{};const F=[['tahmin','İlk tahminim','--p2'],['gozlem','Ne yaptım, ne gözlemledim?','--p3'],['kanit','Kanıtım ne?','--p4'],['aciklama','Bilimsel açıklamam','--p5'],['yeni','Merak ettiğim yeni soru','--p1']];
+  $('#overlay').innerHTML=`<form class="modal" id="vForm"><div class="modal-head"><div><p class="eyebrow">Ziyaretçi kartı</p><h3 style="margin-top:6px">${esc(s.ad)}</h3></div><button type="button" class="iconbtn" id="vClose">Kapat</button></div>
+   <p class="mq" style="font:600 1.05rem/1.35 var(--f-display)">${esc(s.merak)}</p>
+   ${F.map(([id,l,c])=>`<div class="f" style="--c:var(${c})"><label for="v_${id}"><span class="pill">${l.split(' ')[0].toUpperCase()}</span>${l}</label><textarea id="v_${id}">${esc(k[id]||'')}</textarea></div>`).join('')}
+   <div class="f"><span style="font-weight:600;font-size:.92rem">Kanıt ilk fikrimi değiştirdi mi?</span><div class="choices" id="vDeg">${[['evet','Evet, değiştirdi'],['hayir','Hayır, doğruladı']].map(([v,l])=>`<button type="button" class="choice ${k.degisti===v?'sel':''}" data-d="${v}">${l}</button>`).join('')}</div></div>
+   <div><button class="btn" type="submit">Kartı bırak</button></div></form>`;
+  $('#overlay').hidden=false;let deg=k.degisti||'';
+  $('#vDeg').querySelectorAll('button').forEach(b=>b.onclick=()=>{deg=b.dataset.d;$('#vDeg').querySelectorAll('button').forEach(x=>x.classList.toggle('sel',x===b))});
+  $('#vClose').onclick=closeOv;$('#v_tahmin').focus();
+  $('#vForm').onsubmit=e=>{e.preventDefault();const c={};F.forEach(([id])=>c[id]=$('#v_'+id).value.trim());c.degisti=deg;
+    if(!c.tahmin||!c.kanit){toast('En az tahmininizi ve kanıtınızı yazın.');return}
+    ziyaret[s.id]=c;store.set('ziyaret',ziyaret);if(!s.demo)push('ziyaretler',{kart:Object.fromEntries(Object.entries(ziyaret).filter(([id])=>id!=='demo')),t:Date.now()});
+    closeOv();renderMuseum();renderLive();toast('Kartınız sergiye bırakıldı.')}}
+function openSee(s){const v=visitsFor(s.id);const ch=v.filter(k=>k.degisti==='evet').length;
+  $('#overlay').innerHTML=`<div class="modal"><div class="modal-head"><div><p class="eyebrow">Serginize gelen kanıtlar</p><h3 style="margin-top:6px">${esc(s.ad)}</h3></div><button class="iconbtn" id="sClose">Kapat</button></div>
+   <div style="display:flex;gap:24px;flex-wrap:wrap"><div><div class="stat">${v.length}</div><span class="note">ziyaretçi kartı</span></div><div><div class="stat">%${pct(ch,v.length)}</div><span class="note">kanıtla fikrini değiştirdi</span></div></div>
+   <p class="note"><b>Kapanış sorusu:</b> Sergimde öğrenme hangi anda görünür oldu? Kartlardaki ilk tahmin ile açıklama arasındaki farka bakın.</p>
+   ${v.length?v.map(k=>`<div class="vcard"><b>Tahmin</b><span>${esc(k.tahmin)}</span><b>Gözlem</b><span>${esc(k.gozlem||'–')}</span><b>Kanıt</b><span>${esc(k.kanit)}</span><b>Açıklama</b><span>${esc(k.aciklama||'–')}</span>${k.yeni?`<b>Yeni soru</b><span>${esc(k.yeni)}</span>`:''}<span class="note">${k.degisti==='evet'?'Fikri değişti':k.degisti==='hayir'?'Tahmini doğrulandı':''}</span></div>`).join(''):'<p class="lock">Henüz ziyaretçi kartı gelmedi. Katılımcıları serginizi gezmeye davet edin.</p>'}</div>`;
+  $('#overlay').hidden=false;$('#sClose').onclick=closeOv}
+
+let armR=false;$('#resetAll').onclick=e=>{if(!armR){armR=true;e.target.textContent='Emin misiniz? Silmek için tekrar dokunun';setTimeout(()=>{armR=false;e.target.textContent='Tüm kayıtları temizle'},4000);return}
+  try{Object.keys(localStorage).filter(k=>k.startsWith(LS)).forEach(k=>localStorage.removeItem(k))}catch(err){}location.hash='#basla';location.reload()};
+route();renderLive();
+</script>
+</body>
+</html>
