@@ -484,6 +484,7 @@ const pct=(a,b)=>b?Math.round(100*a/b):0;
 let me=store.get('me',{oy:{},stage:{},karar:{},sinif:{},formul:null});
 let sergi=store.get('sergi',{});
 let ziyaret=store.get('ziyaret',{});
+let kiosk=store.get('kiosk',{});
 function saveMe(){store.set('me',me)}
 
 /* ---------- sınıf sayacı (yerel) ---------- */
@@ -506,7 +507,7 @@ function renderLive(){
   let w=0,t=0;for(const e of EXPS){const s=sumT(e.id);t+=s;w+=s-(T(e.id)[e.rk]||0)}
   $('#hWrong').textContent=t?`%${pct(w,t)}`:'–';
   $('#hEx').textContent=exhibits().length;
-  $('#hVis').textContent=Object.keys(ziyaret).length;
+  $('#hVis').textContent=Object.keys(ziyaret).length+Object.values(kiosk).reduce((a,v)=>a+v.length,0);
   EXPS.forEach(e=>drawDist(e));drawJury();drawFormulaStats();
   if(view==='muze')renderMuseum();
 }
@@ -717,7 +718,7 @@ $('#copyBtn').onclick=async()=>{const s=sergi;const txt=`${s.ad||''}\n${[s.brans
 
 /* ---------- BİLİM MÜZESİ ---------- */
 const DEMO={id:'demo',demo:true,ad:'Kalem Neden Kırık Görünüyor?',grup:'Örnek sergi',brans:'Fizik',sinif:'9. sınıf',merak:'Suya batırdığımız kalem gerçekten kırılır mı?',tahmin:'Kalemin su içindeki görüntüsü havadakiyle aynı doğrultuda mı olacak?',eylem:'Ziyaretçi kalemi şeffaf bardaktaki suya koyar ve üç farklı açıdan bakar.',kanit:'Su-hava sınırında görüntünün kaydığı noktayı kâğıda çizer.',aciklama:'Işık farklı ortamlar arasında geçerken yön değiştirir; kalem kırılmaz, görüntü kayar.',sim:'sim/kirik-kalem.html'};
-function visitsFor(id){const out=[];for(const d of visits()){const k=d.kart&&d.kart[id];if(k)out.push(k)}return out}
+function visitsFor(id){const out=[];for(const d of visits()){const k=d.kart&&d.kart[id];if(k)out.push(k)}return out.concat(kiosk[id]||[])}
 function renderMuseum(){const ex=exhibits();const list=[...ex,DEMO];
   $('#museum').innerHTML=(ex.length?'':`<div class="empty" style="grid-column:1/-1"><strong>Müze henüz boş</strong><p>Sergi Stüdyosu'nda "Müzeye as" dediğinizde serginiz burada belirir. Yandaki örnek sergiyle ziyaretçi kartını deneyebilirsiniz.</p><a class="btn small" href="#studyo">Sergimi tasarla</a></div>`)+
   list.map(s=>{const v=visitsFor(s.id);const ch=v.filter(k=>k.degisti==='evet').length;const done=!!ziyaret[s.id];
@@ -725,12 +726,13 @@ function renderMuseum(){const ex=exhibits();const list=[...ex,DEMO];
      <h3>${esc(s.ad)}</h3><p class="who">${esc([s.grup,s.sinif].filter(Boolean).join(' · '))}</p>
      <p class="mq">${esc(s.merak)}</p>${s.eylem?`<p class="task"><b>Görev:</b> ${esc(s.eylem)}</p>`:''}
      <div class="meta"><span><b>${v.length}</b> ziyaretçi</span><span><b>%${pct(ch,v.length)}</b> fikrini değiştirdi</span></div>
-     <div style="display:flex;gap:8px;flex-wrap:wrap">${s.mine?`<button class="btn small" data-see="${esc(s.id)}">Ziyaretçi kanıtları</button><a class="btn ghost small" href="#studyo">Düzenle</a>`:`<button class="btn small ${done?'ghost':''}" data-visit="${esc(s.id)}">${done?'Kartımı düzenle':'Ziyaretçi kartı doldur'}</button>`}${simBtn(s)}</div></article>`}).join('');
+     <div style="display:flex;gap:8px;flex-wrap:wrap">${s.mine?`<button class="btn small" data-kiosk="${esc(s.id)}">Ziyaretçi kartı doldur</button><button class="btn ghost small" data-see="${esc(s.id)}">Ziyaretçi kanıtları</button><a class="btn ghost small" href="#studyo">Düzenle</a>`:`<button class="btn small ${done?'ghost':''}" data-visit="${esc(s.id)}">${done?'Kartımı düzenle':'Ziyaretçi kartı doldur'}</button>`}${simBtn(s)}</div></article>`}).join('');
   $('#museum').querySelectorAll('[data-visit]').forEach(b=>b.onclick=()=>openVisit(list.find(s=>s.id===b.dataset.visit)));
+  $('#museum').querySelectorAll('[data-kiosk]').forEach(b=>b.onclick=()=>openVisit(list.find(s=>s.id===b.dataset.kiosk),true));
   $('#museum').querySelectorAll('[data-see]').forEach(b=>b.onclick=()=>openSee(list.find(s=>s.id===b.dataset.see)))}
 function closeOv(){$('#overlay').hidden=true;$('#overlay').innerHTML=''}
 $('#overlay').onclick=e=>{if(e.target.id==='overlay')closeOv()};addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('#overlay').hidden)closeOv()});
-function openVisit(s){const k=ziyaret[s.id]||{};const F=[['tahmin','İlk tahminim','--p2'],['gozlem','Ne yaptım, ne gözlemledim?','--p3'],['kanit','Kanıtım ne?','--p4'],['aciklama','Bilimsel açıklamam','--p5'],['yeni','Merak ettiğim yeni soru','--p1']];
+function openVisit(s,isKiosk){const k=isKiosk?{}:(ziyaret[s.id]||{});const F=[['tahmin','İlk tahminim','--p2'],['gozlem','Ne yaptım, ne gözlemledim?','--p3'],['kanit','Kanıtım ne?','--p4'],['aciklama','Bilimsel açıklamam','--p5'],['yeni','Merak ettiğim yeni soru','--p1']];
   $('#overlay').innerHTML=`<form class="modal" id="vForm"><div class="modal-head"><div><p class="eyebrow">Ziyaretçi kartı</p><h3 style="margin-top:6px">${esc(s.ad)}</h3></div><button type="button" class="iconbtn" id="vClose">Kapat</button></div>
    <p class="mq" style="font:600 1.05rem/1.35 var(--f-display)">${esc(s.merak)}</p>
    ${s.tahmin?`<p class="task" style="border-left:3px solid var(--p2);padding-left:10px"><b>Önce tahmin et:</b> ${esc(s.tahmin)}</p>`:''}
@@ -744,8 +746,18 @@ function openVisit(s){const k=ziyaret[s.id]||{};const F=[['tahmin','İlk tahmini
   $('#vClose').onclick=closeOv;$('#v_tahmin').focus();
   $('#vForm').onsubmit=e=>{e.preventDefault();const c={};F.forEach(([id])=>c[id]=$('#v_'+id).value.trim());c.degisti=deg;
     if(!c.tahmin||!c.kanit){toast('En az tahmininizi ve kanıtınızı yazın.');return}
-    ziyaret[s.id]=c;store.set('ziyaret',ziyaret);if(!s.demo)push('ziyaretler',{kart:Object.fromEntries(Object.entries(ziyaret).filter(([id])=>id!=='demo')),t:Date.now()});
-    closeOv();renderMuseum();renderLive();toast('Kartınız sergiye bırakıldı.')}}
+    if(isKiosk){(kiosk[s.id]=kiosk[s.id]||[]).push(c);store.set('kiosk',kiosk)}
+    else{ziyaret[s.id]=c;store.set('ziyaret',ziyaret);if(!s.demo)push('ziyaretler',{kart:Object.fromEntries(Object.entries(ziyaret).filter(([id])=>id!=='demo')),t:Date.now()})}
+    renderMuseum();renderLive();showAnswer(s,c,isKiosk)}}
+function showAnswer(s,c,isKiosk){const row=(c2,l,v)=>v?`<div style="border-left:4px solid var(${c2});padding:4px 0 4px 12px"><b style="font-size:.92rem">${l}</b><p style="margin:4px 0 0;line-height:1.5">${esc(v)}</p></div>`:'';
+  $('#overlay').innerHTML=`<div class="modal"><div class="modal-head"><div><p class="eyebrow">Kartınız bırakıldı</p><h3 style="margin-top:6px">Sergi ne diyor?</h3></div><button class="iconbtn" id="aClose">Kapat</button></div>
+   <p class="note">Önce kendi tahmininize bakın, sonra serginin kanıtı ve açıklamasıyla karşılaştırın.</p>
+   ${row('--p2','Senin tahminin',c.tahmin)}${row('--p4','Serginin kanıtı',s.kanit)}${row('--p5','Bilimsel açıklama',s.aciklama)}
+   ${!s.kanit&&!s.aciklama?'<p class="lock">Bu sergide henüz açıklama yazılmamış.</p>':''}
+   <div style="display:flex;gap:10px;flex-wrap:wrap">${isKiosk?'<button class="btn" id="aNext">Sıradaki ziyaretçi</button>':''}<button class="btn ghost" id="aDone">Tamam</button></div></div>`;
+  $('#overlay').hidden=false;$('#aClose').onclick=$('#aDone').onclick=closeOv;
+  if(isKiosk)$('#aNext').onclick=()=>openVisit(s,true);
+  toast('Kartınız sergiye bırakıldı.')}
 function openSee(s){const v=visitsFor(s.id);const ch=v.filter(k=>k.degisti==='evet').length;
   $('#overlay').innerHTML=`<div class="modal"><div class="modal-head"><div><p class="eyebrow">Serginize gelen kanıtlar</p><h3 style="margin-top:6px">${esc(s.ad)}</h3></div><button class="iconbtn" id="sClose">Kapat</button></div>
    <div style="display:flex;gap:24px;flex-wrap:wrap"><div><div class="stat">${v.length}</div><span class="note">ziyaretçi kartı</span></div><div><div class="stat">%${pct(ch,v.length)}</div><span class="note">kanıtla fikrini değiştirdi</span></div></div>
