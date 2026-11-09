@@ -391,6 +391,7 @@ img{max-width:100%}
       <div class="f" style="--c:var(--p1)"><label for="s_merak"><span class="pill">1 MERAK</span>Ziyaretçiye soracağınız soru</label><textarea id="s_merak" placeholder="Sonucu açıklamadan merak uyandıran soru"></textarea></div>
       <div class="f" style="--c:var(--p2)"><label for="s_tahmin"><span class="pill">2 TAHMİN</span>Ziyaretçi neyi tahmin edecek?</label><textarea id="s_tahmin" placeholder="Seçenekler ya da açık uçlu tahmin"></textarea></div>
       <div class="f" style="--c:var(--p3)"><label for="s_eylem"><span class="pill">3 GÖZLEM</span>Ziyaretçi tam olarak ne yapacak?</label><textarea id="s_eylem" placeholder="Örn. Balonu şişirir, ipin başına koyar ve bırakır."></textarea></div>
+      <div class="f" style="--c:var(--p3)"><label for="s_sim">Simülasyon bağlantısı (isteğe bağlı)</label><input id="s_sim" list="simList" placeholder="Listeden seçin ya da https:// ile başlayan bir bağlantı yapıştırın"><datalist id="simList"><option value="sim/yokus-asagi.html">Yokuş aşağı: eğik düzlemde araba</option><option value="sim/kirik-kalem.html">Kalem neden kırık görünüyor?</option></datalist></div>
       <div class="f" style="--c:var(--p4)"><label for="s_kanit"><span class="pill">4 KANIT</span>Gözlenen ve ölçülen kanıt</label><textarea id="s_kanit" placeholder="Hangi ölçüm, sayım ya da kayıt tahmini sınar?"></textarea></div>
       <div class="f" style="--c:var(--p5)"><label for="s_aciklama"><span class="pill">5 AÇIKLAMA</span>Bilimsel açıklama</label><textarea id="s_aciklama" placeholder="Kanıt, ilk tahminle nasıl karşılaştırılıyor?"></textarea></div>
       <div class="two">
@@ -679,7 +680,9 @@ function drawFormulaStats(){if(!me.formul){$('#fMedian').textContent='–';$('#f
 $('#fShuffle').onclick=shuffle;shuffle();
 
 /* ---------- SERGİ STÜDYOSU ---------- */
-const SF=['grup','brans','sinif','kazanim','ad','merak','tahmin','eylem','kanit','aciklama','malzeme','guvenlik'];
+const SF=['grup','brans','sinif','kazanim','ad','merak','tahmin','eylem','sim','kanit','aciklama','malzeme','guvenlik'];
+const safeUrl=u=>{u=(u||'').trim();return /^(https?:\/\/|sim\/)/i.test(u)?u:''};
+const simBtn=(s,cls)=>safeUrl(s.sim)?`<a class="btn ghost small ${cls||''}" href="${esc(safeUrl(s.sim))}" target="_blank" rel="noopener">Simülasyonu aç</a>`:'';
 SF.forEach(k=>{const el=$('#s_'+k);el.value=sergi[k]||'';el.addEventListener('input',()=>{sergi[k]=el.value;store.set('sergi',sergi);paintStudio()})});
 const VERBS=/(ölç|bırak|it|çek|dök|çevir|say|tart|bas|döndür|karşılaştır|yerleştir|eğ|üfle|şişir|yak|sür|kaydır|tut|dinle|bak|sıkıştır|ekle|karıştır|koy|seç|dokun|zamanla)/i;
 const MEAS=/(\d|cm|mm|metre|saniye|sn|gram|kg|derece|°|sayı|say|ölç|kayıt|kaydet|tablo|grafik|süre|mesafe|kronometre|cetvel|terazi|termometre)/i;
@@ -709,11 +712,11 @@ let armEx=false;$('#exampleBtn').onclick=e=>{const has=SF.some(k=>(sergi[k]||'')
 $('#studioForm').onsubmit=e=>{e.preventDefault();if(!(sergi.ad||'').trim()||!(sergi.merak||'').trim()){toast('Müzeye asmak için en az sergi adı ve merak sorusu gerekli.');return}
   sergi.asili=true;store.set('sergi',sergi);const d={};SF.forEach(k=>d[k]=sergi[k]||'');d.t=Date.now();push('sergiler',d);paintStudio();
   toast('Sergi müzeye asıldı.');setTimeout(()=>location.hash='#muze',600)};
-$('#copyBtn').onclick=async()=>{const s=sergi;const txt=`${s.ad||''}\n${[s.brans,s.sinif].filter(Boolean).join(' · ')}\nKazanım: ${s.kazanim||''}\n\n1 MERAK: ${s.merak||''}\n2 TAHMİN: ${s.tahmin||''}\n3 GÖZLEM (ziyaretçinin işlemi): ${s.eylem||''}\n4 KANIT: ${s.kanit||''}\n5 AÇIKLAMA: ${s.aciklama||''}\n\nMalzemeler: ${s.malzeme||''}\nGüvenlik: ${s.guvenlik||''}\nHazırlayan: ${s.grup||''}`;
+$('#copyBtn').onclick=async()=>{const s=sergi;const txt=`${s.ad||''}\n${[s.brans,s.sinif].filter(Boolean).join(' · ')}\nKazanım: ${s.kazanim||''}\n\n1 MERAK: ${s.merak||''}\n2 TAHMİN: ${s.tahmin||''}\n3 GÖZLEM (ziyaretçinin işlemi): ${s.eylem||''}${safeUrl(s.sim)?'\nSimülasyon: '+safeUrl(s.sim):''}\n4 KANIT: ${s.kanit||''}\n5 AÇIKLAMA: ${s.aciklama||''}\n\nMalzemeler: ${s.malzeme||''}\nGüvenlik: ${s.guvenlik||''}\nHazırlayan: ${s.grup||''}`;
   try{await navigator.clipboard.writeText(txt);toast('Sergi kartı kopyalandı.')}catch(e){toast('Kopyalanamadı; metni formdan seçebilirsiniz.')}};
 
 /* ---------- BİLİM MÜZESİ ---------- */
-const DEMO={id:'demo',demo:true,ad:'Kalem Neden Kırık Görünüyor?',grup:'Örnek sergi',brans:'Fizik',sinif:'9. sınıf',merak:'Suya batırdığımız kalem gerçekten kırılır mı?',tahmin:'Kalemin su içindeki görüntüsü havadakiyle aynı doğrultuda mı olacak?',eylem:'Ziyaretçi kalemi şeffaf bardaktaki suya koyar ve üç farklı açıdan bakar.',kanit:'Su-hava sınırında görüntünün kaydığı noktayı kâğıda çizer.',aciklama:'Işık farklı ortamlar arasında geçerken yön değiştirir; kalem kırılmaz, görüntü kayar.'};
+const DEMO={id:'demo',demo:true,ad:'Kalem Neden Kırık Görünüyor?',grup:'Örnek sergi',brans:'Fizik',sinif:'9. sınıf',merak:'Suya batırdığımız kalem gerçekten kırılır mı?',tahmin:'Kalemin su içindeki görüntüsü havadakiyle aynı doğrultuda mı olacak?',eylem:'Ziyaretçi kalemi şeffaf bardaktaki suya koyar ve üç farklı açıdan bakar.',kanit:'Su-hava sınırında görüntünün kaydığı noktayı kâğıda çizer.',aciklama:'Işık farklı ortamlar arasında geçerken yön değiştirir; kalem kırılmaz, görüntü kayar.',sim:'sim/kirik-kalem.html'};
 function visitsFor(id){const out=[];for(const d of visits()){const k=d.kart&&d.kart[id];if(k)out.push(k)}return out}
 function renderMuseum(){const ex=exhibits();const list=[...ex,DEMO];
   $('#museum').innerHTML=(ex.length?'':`<div class="empty" style="grid-column:1/-1"><strong>Müze henüz boş</strong><p>Sergi Stüdyosu'nda "Müzeye as" dediğinizde serginiz burada belirir. Yandaki örnek sergiyle ziyaretçi kartını deneyebilirsiniz.</p><a class="btn small" href="#studyo">Sergimi tasarla</a></div>`)+
@@ -722,7 +725,7 @@ function renderMuseum(){const ex=exhibits();const list=[...ex,DEMO];
      <h3>${esc(s.ad)}</h3><p class="who">${esc([s.grup,s.sinif].filter(Boolean).join(' · '))}</p>
      <p class="mq">${esc(s.merak)}</p>${s.eylem?`<p class="task"><b>Görev:</b> ${esc(s.eylem)}</p>`:''}
      <div class="meta"><span><b>${v.length}</b> ziyaretçi</span><span><b>%${pct(ch,v.length)}</b> fikrini değiştirdi</span></div>
-     <div style="display:flex;gap:8px;flex-wrap:wrap">${s.mine?`<button class="btn small" data-see="${esc(s.id)}">Ziyaretçi kanıtları</button><a class="btn ghost small" href="#studyo">Düzenle</a>`:`<button class="btn small ${done?'ghost':''}" data-visit="${esc(s.id)}">${done?'Kartımı düzenle':'Ziyaretçi kartı doldur'}</button>`}</div></article>`}).join('');
+     <div style="display:flex;gap:8px;flex-wrap:wrap">${s.mine?`<button class="btn small" data-see="${esc(s.id)}">Ziyaretçi kanıtları</button><a class="btn ghost small" href="#studyo">Düzenle</a>`:`<button class="btn small ${done?'ghost':''}" data-visit="${esc(s.id)}">${done?'Kartımı düzenle':'Ziyaretçi kartı doldur'}</button>`}${simBtn(s)}</div></article>`}).join('');
   $('#museum').querySelectorAll('[data-visit]').forEach(b=>b.onclick=()=>openVisit(list.find(s=>s.id===b.dataset.visit)));
   $('#museum').querySelectorAll('[data-see]').forEach(b=>b.onclick=()=>openSee(list.find(s=>s.id===b.dataset.see)))}
 function closeOv(){$('#overlay').hidden=true;$('#overlay').innerHTML=''}
@@ -730,6 +733,9 @@ $('#overlay').onclick=e=>{if(e.target.id==='overlay')closeOv()};addEventListener
 function openVisit(s){const k=ziyaret[s.id]||{};const F=[['tahmin','İlk tahminim','--p2'],['gozlem','Ne yaptım, ne gözlemledim?','--p3'],['kanit','Kanıtım ne?','--p4'],['aciklama','Bilimsel açıklamam','--p5'],['yeni','Merak ettiğim yeni soru','--p1']];
   $('#overlay').innerHTML=`<form class="modal" id="vForm"><div class="modal-head"><div><p class="eyebrow">Ziyaretçi kartı</p><h3 style="margin-top:6px">${esc(s.ad)}</h3></div><button type="button" class="iconbtn" id="vClose">Kapat</button></div>
    <p class="mq" style="font:600 1.05rem/1.35 var(--f-display)">${esc(s.merak)}</p>
+   ${s.tahmin?`<p class="task" style="border-left:3px solid var(--p2);padding-left:10px"><b>Önce tahmin et:</b> ${esc(s.tahmin)}</p>`:''}
+   ${s.eylem?`<p class="task" style="border-left:3px solid var(--p3);padding-left:10px"><b>Görev:</b> ${esc(s.eylem)}</p>`:''}
+   ${simBtn(s)?`<div>${simBtn(s)}</div>`:''}
    ${F.map(([id,l,c])=>`<div class="f" style="--c:var(${c})"><label for="v_${id}"><span class="pill">${l.split(' ')[0].toUpperCase()}</span>${l}</label><textarea id="v_${id}">${esc(k[id]||'')}</textarea></div>`).join('')}
    <div class="f"><span style="font-weight:600;font-size:.92rem">Kanıt ilk fikrimi değiştirdi mi?</span><div class="choices" id="vDeg">${[['evet','Evet, değiştirdi'],['hayir','Hayır, doğruladı']].map(([v,l])=>`<button type="button" class="choice ${k.degisti===v?'sel':''}" data-d="${v}">${l}</button>`).join('')}</div></div>
    <div><button class="btn" type="submit">Kartı bırak</button></div></form>`;

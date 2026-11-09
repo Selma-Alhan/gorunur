@@ -1,0 +1,203 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Kalem neden kırık görünüyor?</title>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#EEF3F8; --grid:#D7E1EC; --ink:#1C2836; --muted:#56677B;
+  --panel:#FFFFFF; --line:#C5D2E0; --glass:#8FA6BF; --water:rgba(70,150,230,.22);
+  --pencil:#F0B400; --pencil-edge:#9A6F00; --tip:#3A2A1A; --ray:#E0392F; --ghost:#56677B;
+  --accent:#2E7BE0; --accent-ink:#FFFFFF;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){
+  :root{
+    --paper:#111924; --grid:#1C2836; --ink:#E5ECF4; --muted:#93A4B9;
+    --panel:#172231; --line:#2A3A4E; --glass:#7D93AD; --water:rgba(90,170,250,.22);
+    --pencil:#F5C431; --pencil-edge:#C99B10; --tip:#E5ECF4; --ray:#FF6B5E; --ghost:#93A4B9;
+    --accent:#5CA2F6; --accent-ink:#0E1620;
+    color-scheme:dark;
+  }
+}
+*{box-sizing:border-box}
+body{
+  margin:0; font-family:"Atkinson Hyperlegible",system-ui,sans-serif; color:var(--ink);
+  background-color:var(--paper);
+  background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);
+  background-size:22px 22px;
+}
+main{max-width:1000px; margin:0 auto; padding:28px 20px 48px}
+h1{font-size:clamp(1.6rem,3.2vw,2.3rem); margin:0 0 8px; line-height:1.15}
+.q{font-size:1.1rem; color:var(--muted); margin:0 0 20px; max-width:62ch; line-height:1.5}
+.stage{background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:10px}
+canvas{width:100%; display:block; touch-action:none}
+.readout{margin:14px 4px 0; font-size:1.1rem; line-height:1.5; min-height:3em}
+.readout b{font-variant-numeric:tabular-nums}
+.controls{display:flex; flex-wrap:wrap; gap:14px 26px; align-items:center; margin:18px 0 24px}
+label{display:flex; align-items:center; gap:8px; font-size:1rem}
+input[type=range]{width:170px; accent-color:var(--accent)}
+input[type=checkbox]{width:20px; height:20px; accent-color:var(--accent)}
+input:focus-visible{outline:3px solid var(--pencil); outline-offset:2px}
+h2{font-size:1.25rem; margin:0 0 8px}
+.explain{max-width:68ch; line-height:1.55}
+.explain p{margin:0 0 10px}
+.key{display:flex; flex-wrap:wrap; gap:8px 22px; color:var(--muted); font-size:.95rem; margin:4px 4px 0}
+.key i{display:inline-block; width:26px; height:0; vertical-align:middle; margin-right:6px; border-top:3px solid var(--ray)}
+.key i.d{border-top:3px dashed var(--ghost)}
+.key i.p{border-top:8px solid var(--pencil)}
+</style>
+</head>
+<body>
+<main>
+  <h1>Kalem neden kırık görünüyor?</h1>
+  <p class="q">Suya batırdığımız kalem gerçekten kırılır mı? Gözü sürükleyerek farklı açılardan bakın, sonra suyu boşaltıp karşılaştırın.</p>
+
+  <div class="stage">
+    <canvas id="cv" aria-label="Su dolu bardakta kalem, göz ve ışık ışınları"></canvas>
+    <div class="key"><span><i class="p"></i>Gözün gördüğü kalem</span><span><i></i>Işığın gerçek yolu</span><span><i class="d"></i>Gözün sandığı yol</span></div>
+    <div class="readout" id="readout"></div>
+  </div>
+
+  <div class="controls">
+    <label>Bakış açısı: <input type="range" id="eye" min="12" max="80" value="30"> <strong id="eyeLab">30°</strong></label>
+    <label>Kalemin eğimi: <input type="range" id="tilt" min="15" max="55" value="35"> <strong id="tiltLab">35°</strong></label>
+    <label><input type="checkbox" id="water" checked> Bardakta su var</label>
+    <label><input type="checkbox" id="rays" checked> Işınları göster</label>
+    <label><input type="checkbox" id="real"> Kalemin gerçek yerini göster</label>
+  </div>
+
+  <h2>Ne oluyor?</h2>
+  <div class="explain">
+    <p>Kalemin sudaki kısmından çıkan ışık, sudan havaya geçerken yön değiştirir. Buna kırılma denir.</p>
+    <p>Gözümüz ışığın hep düz bir çizgide geldiğini varsayar. Bu yüzden ışığı geriye doğru düz uzatır ve kalemi olduğundan daha yukarıda, daha sığda görür. Su yüzeyinin üstündeki kısım ise olduğu yerde görünür; aradaki bu fark kalemi "kırık" gösterir.</p>
+    <p>Kalem hiç değişmiyor, değişen ışığın yolu. Suyu boşaltınca kırıklık kaybolur.</p>
+  </div>
+</main>
+
+<script>
+const cv=document.getElementById('cv'), ctx=cv.getContext('2d'), $=id=>document.getElementById(id);
+const css=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+let phi=30*Math.PI/180, tilt=35*Math.PI/180, hasWater=true, showRays=true, showReal=false;
+let W=0,H=0,G=null, dragging=false;
+
+function resize(){
+  W=cv.clientWidth; H=Math.round(Math.max(340,W*0.58));
+  const dpr=window.devicePixelRatio||1;
+  cv.width=W*dpr; cv.height=H*dpr; cv.style.height=H+'px';
+  ctx.setTransform(dpr,0,0,dpr,0,0); draw();
+}
+function geom(){
+  const gw=Math.max(150,W*0.28), gx0=W*0.1, gx1=gx0+gw, gy1=H-24, gy0=H*0.34;
+  const ys=gy0+(gy1-gy0)*0.12, cx=(gx0+gx1)/2, pxcm=(gy1-gy0)/12;
+  const Q={x:gx0+gw*0.28,y:ys}, d={x:Math.sin(tilt),y:Math.cos(tilt)};
+  const Ls=Math.min((gy1-ys-10)/d.y,(gx1-10-Q.x)/d.x);
+  const La=Math.min(H*0.3,(ys-12)/d.y);
+  const R=Math.min((W-40-cx)/Math.cos(phi),(ys-28)/Math.sin(phi));
+  const E={x:cx+R*Math.cos(phi), y:ys-R*Math.sin(phi)};
+  return {gx0,gx1,gy0,gy1,ys,cx,pxcm,Q,d,Ls,La,E};
+}
+const n=()=>hasWater?1.33:1.0;
+// P (suda) -> E (havada) ışınının yüzeyden çıktığı nokta
+function exitPoint(P,E,ys){
+  const f=sx=>{const a=Math.hypot(sx-P.x,ys-P.y), b=Math.hypot(E.x-sx,E.y-ys);
+    return n()*(sx-P.x)/a-(E.x-sx)/b;};
+  let lo=Math.min(P.x,E.x)-2000, hi=Math.max(P.x,E.x)+2000;
+  for(let i=0;i<60;i++){const m=(lo+hi)/2; if(f(m)>0) hi=m; else lo=m;}
+  return {x:(lo+hi)/2,y:ys};
+}
+// İki gözün (çok yakın iki bakış noktası) geri uzatılan ışınlarının kesişimi = görüntü
+function imageOf(P){
+  const E=G.E, S=exitPoint(P,E,G.ys);
+  const ux=E.x-S.x, uy=E.y-S.y, L=Math.hypot(ux,uy), px=-uy/L*3, py=ux/L*3;
+  const E1={x:E.x+px,y:E.y+py}, E2={x:E.x-px,y:E.y-py};
+  const S1=exitPoint(P,E1,G.ys), S2=exitPoint(P,E2,G.ys);
+  const d1={x:S1.x-E1.x,y:S1.y-E1.y}, d2={x:S2.x-E2.x,y:S2.y-E2.y};
+  const den=d1.x*d2.y-d1.y*d2.x;
+  if(Math.abs(den)<1e-9) return {I:P,S};
+  const t=((E2.x-E1.x)*d2.y-(E2.y-E1.y)*d2.x)/den;
+  return {I:{x:E1.x+t*d1.x,y:E1.y+t*d1.y},S};
+}
+function pencilLine(pts,w,color){
+  ctx.lineCap='round'; ctx.lineJoin='round';
+  ctx.strokeStyle=css('--pencil-edge'); ctx.lineWidth=w+3; ctx.beginPath();
+  pts.forEach((p,i)=>i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y)); ctx.stroke();
+  ctx.strokeStyle=color; ctx.lineWidth=w; ctx.stroke();
+}
+function drawEye(E){
+  const a=Math.atan2(G.ys-E.y,G.cx-E.x);
+  ctx.save(); ctx.translate(E.x,E.y); ctx.rotate(a);
+  ctx.fillStyle=css('--panel'); ctx.strokeStyle=css('--ink'); ctx.lineWidth=2.5;
+  ctx.beginPath(); ctx.moveTo(-20,0); ctx.quadraticCurveTo(0,-15,20,0); ctx.quadraticCurveTo(0,15,-20,0); ctx.fill(); ctx.stroke();
+  ctx.fillStyle=css('--accent'); ctx.beginPath(); ctx.arc(5,0,6.5,0,Math.PI*2); ctx.fill();
+  ctx.fillStyle=css('--ink'); ctx.beginPath(); ctx.arc(7,0,3,0,Math.PI*2); ctx.fill();
+  ctx.restore();
+  ctx.fillStyle=css('--muted'); ctx.font='600 13px "Atkinson Hyperlegible",sans-serif'; ctx.textAlign='center';
+  ctx.fillText('sürükle',E.x,E.y+32);
+}
+function draw(){
+  if(!W) return;
+  G=geom(); ctx.clearRect(0,0,W,H);
+  const {gx0,gx1,gy0,gy1,ys,Q,d,Ls,La,E}=G;
+  // su
+  if(hasWater){ctx.fillStyle=css('--water'); ctx.fillRect(gx0,ys,gx1-gx0,gy1-ys);
+    ctx.strokeStyle=css('--accent'); ctx.lineWidth=1.5; ctx.beginPath(); ctx.moveTo(gx0,ys); ctx.lineTo(gx1,ys); ctx.stroke();}
+  // bardak
+  ctx.strokeStyle=css('--glass'); ctx.lineWidth=4; ctx.lineJoin='round';
+  ctx.beginPath(); ctx.moveTo(gx0,gy0); ctx.lineTo(gx0,gy1); ctx.lineTo(gx1,gy1); ctx.lineTo(gx1,gy0); ctx.stroke();
+  // kalem: su üstü
+  const top={x:Q.x-La*d.x,y:Q.y-La*d.y}, tip={x:Q.x+Ls*d.x,y:Q.y+Ls*d.y};
+  // sudaki kısmın gerçek ve görünen noktaları
+  const N=24, real=[], seen=[];
+  for(let i=0;i<=N;i++){const s=Ls*i/N; const P={x:Q.x+s*d.x,y:Q.y+s*d.y+(i?0:0.01)}; real.push(P); seen.push(i?imageOf(P).I:Q);}
+  if(showReal&&hasWater){ctx.setLineDash([6,6]); ctx.strokeStyle=css('--ghost'); ctx.lineWidth=9; ctx.lineCap='round';
+    ctx.beginPath(); ctx.moveTo(Q.x,Q.y); ctx.lineTo(tip.x,tip.y); ctx.stroke(); ctx.setLineDash([]);
+    ctx.fillStyle=css('--ghost'); ctx.font='600 13px "Atkinson Hyperlegible",sans-serif'; ctx.textAlign='left';
+    ctx.fillText('gerçek yeri',tip.x+10,tip.y+4);}
+  pencilLine([top,Q],10,css('--pencil'));
+  pencilLine(seen,10,css('--pencil'));
+  const st=seen[N]; ctx.fillStyle=css('--tip'); ctx.beginPath(); ctx.arc(st.x,st.y,4.5,0,Math.PI*2); ctx.fill();
+  // ışınlar
+  if(showRays){
+    const T=imageOf(tip), I=T.I, S=T.S;
+    ctx.strokeStyle=css('--ray'); ctx.lineWidth=2.2;
+    ctx.beginPath(); ctx.moveTo(tip.x,tip.y); ctx.lineTo(S.x,S.y); ctx.lineTo(E.x,E.y); ctx.stroke();
+    if(hasWater){ctx.setLineDash([6,5]); ctx.strokeStyle=css('--ghost'); ctx.lineWidth=2;
+      ctx.beginPath(); ctx.moveTo(S.x,S.y); ctx.lineTo(I.x,I.y); ctx.stroke(); ctx.setLineDash([]);}
+    // normal
+    ctx.setLineDash([2,4]); ctx.strokeStyle=css('--muted'); ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(S.x,S.y-40); ctx.lineTo(S.x,S.y+40); ctx.stroke(); ctx.setLineDash([]);
+  }
+  drawEye(E);
+  // okuma
+  const realD=(tip.y-ys)/G.pxcm, appD=(seen[N].y-ys)/G.pxcm, f=x=>x.toFixed(1).replace('.',',');
+  $('readout').innerHTML=hasWater
+    ? `Kalemin ucu gerçekte <b>${f(realD)} cm</b> derinde, göze <b>${f(appD)} cm</b> derinde görünüyor.`
+    : `Su yok: ışık yön değiştirmiyor, kalem düz ve olduğu yerde görünüyor.`;
+}
+// sürükleme
+function toLocal(e){const r=cv.getBoundingClientRect(); return {x:e.clientX-r.left,y:e.clientY-r.top};}
+cv.addEventListener('pointerdown',e=>{const p=toLocal(e); if(Math.hypot(p.x-G.E.x,p.y-G.E.y)<40){dragging=true; cv.setPointerCapture(e.pointerId);}});
+cv.addEventListener('pointermove',e=>{
+  const p=toLocal(e);
+  cv.style.cursor=Math.hypot(p.x-G.E.x,p.y-G.E.y)<40?'grab':'default';
+  if(!dragging) return;
+  let a=Math.atan2(G.ys-p.y,p.x-G.cx)*180/Math.PI; a=Math.max(12,Math.min(80,a));
+  $('eye').value=Math.round(a); setEye(a);
+});
+cv.addEventListener('pointerup',()=>dragging=false);
+function setEye(a){phi=a*Math.PI/180; $('eyeLab').textContent=Math.round(a)+'°'; draw();}
+$('eye').oninput=e=>setEye(+e.target.value);
+$('tilt').oninput=e=>{tilt=e.target.value*Math.PI/180; $('tiltLab').textContent=e.target.value+'°'; draw();};
+$('water').onchange=e=>{hasWater=e.target.checked; draw();};
+$('rays').onchange=e=>{showRays=e.target.checked; draw();};
+$('real').onchange=e=>{showReal=e.target.checked; draw();};
+window.addEventListener('resize',resize);
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change',draw);
+document.fonts&&document.fonts.ready.then(draw);
+resize();
+</script>
+</body>
+</html>

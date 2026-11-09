@@ -17,7 +17,7 @@ GÖRÜNÜR modelinin beş sorusu üzerine kuruludur: **Ne merak ediyoruz? Ne tah
 
 ## Kullanım
 
-- Tek dosyadır (`index.html`); kurulum gerektirmez.
+- Ana uygulama tek dosyadır (`index.html`); kurulum gerektirmez. `sim/` klasöründe sergilere bağlanabilen simülasyonlar bulunur (Yokuş aşağı, Kalem neden kırık görünüyor?).
 - Çalışmalar yalnızca açıldığı tarayıcıda saklanır; sunucuya veri gönderilmez.
 - Online eğitimde: ekranı paylaşın, **Projeksiyon** düğmesiyle yazıları büyütün, katılımcıların sohbetten gelen tahminlerini **+ / −** ile sayın.
 - Eğitime başlamadan önce **Rehber → Tüm kayıtları temizle**.
